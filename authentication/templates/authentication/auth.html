@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}Authentication - Digital Journal App{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <!-- Tab Navigation -->
+        <div class="auth-tabs">
+            <a 
+                href="{% url 'authentication:auth' %}?tab=signin" 
+                class="auth-tab {% if active_tab == 'signin' %}active{% endif %}" 
+                id="signin-tab"
+                data-testid="signin-tab">
+                SignIn
+            </a>
+            <a 
+                href="{% url 'authentication:auth' %}?tab=signup" 
+                class="auth-tab {% if active_tab == 'signup' %}active{% endif %}" 
+                id="signup-tab"
+                data-testid="signup-tab">
+                SignUp
+            </a>
+        </div>
+
+        <!-- SignIn Form -->
+        <div id="signin-form" class="auth-form {% if active_tab == 'signin' %}active{% endif %}">
+            <form method="post" action="{% url 'authentication:auth' %}?tab=signin">
+                {% csrf_token %}
+                <input type="hidden" name="form_action" value="{% url 'authentication:auth' %}?tab=signin">
+                
+                <div class="form-group">
+                    <label for="username-input" class="form-label">Username</label>
+                    <input 
+                        type="email" 
+                        name="username" 
+                        id="username-input" 
+                        class="form-control"
+                        data-testid="username-input"
+                        placeholder="Your email is your username"
+                        required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password-input" class="form-label">Password</label>
+                    <input 
+                        type="password" 
+                        name="password" 
+                        id="password-input" 
+                        class="form-control"
+                        data-testid="password-input"
+                        placeholder="Enter your password"
+                        required>
+                </div>
+
+                <button 
+                    type="submit" 
+                    class="btn btn-primary btn-block"
+                    id="signin-button"
+                    data-testid="signin-button">
+                    SignIn
+                </button>
+            </form>
+        </div>
+
+        <!-- SignUp Form -->
+        <div id="signup-form" class="auth-form {% if active_tab == 'signup' %}active{% endif %}">
+            <form method="post" action="{% url 'authentication:auth' %}?tab=signup">
+                {% csrf_token %}
+                <input type="hidden" name="form_action" value="{% url 'authentication:auth' %}?tab=signup">
+                
+                <div class="form-group">
+                    <label for="first-name-input" class="form-label">First Name</label>
+                    <input 
+                        type="text" 
+                        name="first_name" 
+                        id="first-name-input" 
+                        class="form-control"
+                        data-testid="first-name-input"
+                        placeholder="Enter your first name"
+                        required>
+                </div>
+
+                <div class="form-group">
+                    <label for="last-name-input" class="form-label">Last Name</label>
+                    <input 
+                        type="text" 
+                        name="last_name" 
+                        id="last-name-input" 
+                        class="form-control"
+                        data-testid="last-name-input"
+                        placeholder="Enter your last name"
+                        required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email-input" class="form-label">Email</label>
+                    <input 
+                        type="email" 
+                        name="email" 
+                        id="email-input" 
+                        class="form-control"
+                        data-testid="email-input"
+                        placeholder="Enter your email address"
+                        required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password1-input" class="form-label">Password</label>
+                    <input 
+                        type="password" 
+                        name="password1" 
+                        id="password1-input" 
+                        class="form-control"
+                        data-testid="password1-input"
+                        placeholder="Enter your password"
+                        required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password2-input" class="form-label">Confirm Password</label>
+                    <input 
+                        type="password" 
+                        name="password2" 
+                        id="password2-input" 
+                        class="form-control"
+                        data-testid="password2-input"
+                        placeholder="Confirm your password"
+                        required>
+                </div>
+
+                <button 
+                    type="submit" 
+                    class="btn btn-primary btn-block"
+                    id="signup-button"
+                    data-testid="signup-button">
+                    SignUp
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

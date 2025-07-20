@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}My Journals - Digital Journal App{% endblock %}
+
+{% block content %}
+<div class="my-journals-container">
+    <div class="my-journals-header">
+        <a href="{% url 'home' %}" class="back-button">
+            <span>← Back</span>
+        </a>
+        <h1 class="my-journals-title">My Journals</h1>
+    </div>
+    
+    <div class="journals-grid">
+        {% for entry in journal_entries %}
+        <div class="journal-card" data-entry-id="{{ entry.id }}" onclick="openJournalModal({{ entry.id }})">
+            <div class="journal-card-header">
+                <div class="journal-date">{{ entry.created_at|date:"M d, Y" }}</div>
+            </div>
+            <div class="journal-card-content">
+                <div class="journal-detail">
+                    <span class="detail-label">Title:</span>
+                    <span class="detail-value">{{ entry.title }}</span>
+                </div>
+                <div class="journal-detail">
+                    <span class="detail-label">Theme:</span>
+                    <span class="detail-value">{{ entry.theme.name }}</span>
+                </div>
+                <div class="journal-detail">
+                    <span class="detail-label">Prompt:</span>
+                    <span class="detail-value prompt-text">{{ entry.prompt|truncatewords:20 }}</span>
+                </div>
+                <div class="journal-detail">
+                    <span class="detail-label">Answer:</span>
+                    <span class="detail-value answer-text">{{ entry.answer|truncatewords:30 }}</span>
+                </div>
+                <div class="expand-hint">
+                    <span>Click to expand</span>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="no-journals">
+            <div class="no-journals-content">
+                <h3>No journal entries yet</h3>
+                <p>Start your journaling journey by creating your first entry.</p>
+                <a href="{% url 'theme_selector' %}" class="create-first-btn">
+                    Create Your First Journal
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% if journal_entries %}
+    <div class="journals-stats">
+        <p class="stats-text">Showing {{ journal_entries.count }} journal entr{{ journal_entries.count|pluralize:"y,ies" }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Journal Modal -->
+<div id="journalModal" class="journal-modal">
+    <div class="journal-modal-content">
+        <div class="journal-modal-header">
+            <h2 class="modal-title">Journal Entry</h2>
+            <button class="modal-close" onclick="closeJournalModal()">&times;</button>
+        </div>
+        <div class="journal-modal-body">
+            <div class="modal-journal-card">
+                <div class="modal-journal-header">
+                    <div class="modal-journal-date" id="modalDate"></div>
+                </div>
+                <div class="modal-journal-content">
+                    <div class="modal-journal-detail">
+                        <span class="modal-detail-label">Title:</span>
+                        <span class="modal-detail-value" id="modalTitle"></span>
+                    </div>
+                    <div class="modal-journal-detail">
+                        <span class="modal-detail-label">Theme:</span>
+                        <span class="modal-detail-value" id="modalTheme"></span>
+                    </div>
+                    <div class="modal-journal-detail">
+                        <span class="modal-detail-label">Prompt:</span>
+                        <span class="modal-detail-value modal-prompt-text" id="modalPrompt"></span>
+                    </div>
+                    <div class="modal-journal-detail">
+                        <span class="modal-detail-label">Answer:</span>
+                        <span class="modal-detail-value modal-answer-text" id="modalAnswer"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('.navbar-search-input');
+    
+    // Auto-submit search form as user types
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            this.form.submit();
+        }, 500);
+    });
+});
+
+// Journal entry data
+const journalEntries = {};
+{% for entry in journal_entries %}
+journalEntries[{{ entry.id }}] = {
+    date: "{{ entry.created_at|date:'M d, Y' }}",
+    title: "{{ entry.title|escapejs }}",
+    theme: "{{ entry.theme.name|escapejs }}",
+    prompt: "{{ entry.prompt|escapejs }}",
+    answer: "{{ entry.answer|escapejs }}"
+};
+{% endfor %}
+
+function openJournalModal(entryId) {
+    const entry = journalEntries[entryId];
+    if (!entry) return;
+    
+    // Populate modal content
+    document.getElementById('modalDate').textContent = entry.date;
+    document.getElementById('modalTitle').textContent = entry.title;
+    document.getElementById('modalTheme').textContent = entry.theme;
+    document.getElementById('modalPrompt').textContent = entry.prompt;
+    document.getElementById('modalAnswer').textContent = entry.answer;
+    
+    // Show modal
+    document.getElementById('journalModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+
+function closeJournalModal() {
+    document.getElementById('journalModal').style.display = 'none';
+    document.body.style.overflow = 'auto'; // Restore scrolling
+}
+
+// Close modal when clicking outside
+document.getElementById('journalModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeJournalModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeJournalModal();
+    }
+});
+</script>
+{% endblock %} 

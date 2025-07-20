@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Answer Prompt - Digital Journal App{% endblock %}
+
+{% block content %}
+<div class="answer-prompt-container">
+    <div class="answer-prompt-header">
+        <a href="{% url 'theme_selector' %}" class="back-button">
+            <span>← Back</span>
+        </a>
+        <h1 class="answer-prompt-title">Answer Prompt</h1>
+    </div>
+    
+    <div class="prompt-section">
+        <div class="theme-info">
+            <div class="theme-name">{{ theme.name }}</div>
+            {% if theme.description %}
+            <div class="theme-description">{{ theme.description }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="prompt-box">
+            <div class="prompt-label">Your Journal Prompt:</div>
+            <div class="prompt-text">{{ prompt }}</div>
+        </div>
+        
+        <form method="post" class="answer-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="title" class="form-label">Journal Title</label>
+                <input type="text" id="title" name="title" class="form-control title-input" placeholder="Enter a title for your journal entry..." value="{{ title|default:'' }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="answer" class="form-label">Your Response</label>
+                <textarea id="answer" name="answer" class="form-control answer-textarea" placeholder="Write your thoughts, reflections, or answers here..." required>{{ answer|default:'' }}</textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="save-button">
+                    <span>Save Journal Entry</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Digital Journal App{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <div class="welcome-message">
+        <h2>Hi {{ user.first_name }}, what's your plan today?</h2>
+    </div>
+    <div class="dashboard-buttons">
+        <a href="{% url 'theme_selector' %}" class="dashboard-button" id="create-journal-btn" data-testid="create-journal-btn">
+            <span class="button-text">Create New Journal</span>
+        </a>
+        <a href="{% url 'my_journals' %}" class="dashboard-button" id="my-journals-btn" data-testid="my-journals-btn">
+            <span class="button-text">My Journals</span>
+        </a>
+    </div>
+</div>
+{% endblock %} 

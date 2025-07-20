@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Select Theme - Digital Journal App{% endblock %}
+
+{% block content %}
+<div class="theme-selector-container">
+    <div class="theme-selector-header">
+        <a href="{% url 'home' %}" class="back-button">
+            <span>← Back</span>
+        </a>
+        <h1 class="theme-selector-title">Select a theme</h1>
+    </div>
+    
+    <div class="themes-grid">
+        {% for theme in themes %}
+        <button class="theme-button" data-theme-id="{{ theme.id }}" data-theme-name="{{ theme.name }}">
+            <span class="theme-name">{{ theme.name }}</span>
+            {% if theme.description %}
+            <span class="theme-description">{{ theme.description }}</span>
+            {% endif %}
+        </button>
+        {% empty %}
+        <div class="no-themes">
+            <p>No themes available. Please contact an administrator.</p>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="theme-selector-actions">
+        <button class="next-button" id="next-button" disabled>
+            <span>Next</span>
+        </button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const themeButtons = document.querySelectorAll('.theme-button');
+    const nextButton = document.getElementById('next-button');
+    let selectedThemeId = null;
+    
+    themeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove selection from all buttons
+            themeButtons.forEach(btn => btn.classList.remove('selected'));
+            
+            // Add selection to clicked button
+            this.classList.add('selected');
+            
+            // Store selected theme ID
+            selectedThemeId = this.dataset.themeId;
+            
+            // Enable next button
+            nextButton.disabled = false;
+        });
+    });
+    
+    nextButton.addEventListener('click', function() {
+        if (selectedThemeId) {
+            // Redirect to answer-prompt page with selected theme
+            window.location.href = `{% url 'answer_prompt' %}?theme_id=${selectedThemeId}`;
+        }
+    });
+});
+</script>
+{% endblock %} 
