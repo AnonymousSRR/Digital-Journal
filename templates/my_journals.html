@@ -3,6 +3,7 @@
 {% block title %}My Journals - Digital Journal App{% endblock %}
 
 {% block content %}
+{% csrf_token %}
 <div class="my-journals-container">
     <div class="my-journals-header">
         <a href="{% url 'home' %}" class="back-button">
@@ -38,6 +39,9 @@
                     <span>Click to expand</span>
                 </div>
             </div>
+            <button class="delete-journal-btn" onclick="deleteJournalEntry({{ entry.id }}, event)" title="Delete journal entry">
+                ✕
+            </button>
         </div>
         {% empty %}
         <div class="no-journals">
@@ -154,5 +158,30 @@ document.addEventListener('keydown', function(e) {
         closeJournalModal();
     }
 });
+
+function deleteJournalEntry(entryId, event) {
+    // Prevent the card click event from triggering
+    event.stopPropagation();
+    
+    // Show confirmation dialog
+    if (confirm('Are you sure you want to delete this journal entry? This action cannot be undone.')) {
+        // Create a form to submit the delete request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/home/delete-journal/${entryId}/`;
+        
+        // Add CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        // Submit the form
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
 </script>
 {% endblock %} 

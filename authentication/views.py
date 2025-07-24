@@ -1,17 +1,18 @@
 """
 Views for user authentication.
 """
-from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import JsonResponse, HttpResponseRedirect
 from django.views.generic import CreateView, FormView
 from django.urls import reverse_lazy
-from django.http import HttpResponseRedirect
+from django.contrib.auth.views import LoginView
+from .models import CustomUser, Theme, JournalEntry
+from .forms import CustomUserCreationForm, CustomAuthenticationForm
 import requests
 import json
-from .forms import CustomUserCreationForm, CustomAuthenticationForm
-from .models import CustomUser, Theme, JournalEntry
 from django.db import models
 
 
@@ -36,6 +37,25 @@ def my_journals_view(request):
         'journal_entries': journal_entries,
         'search_query': search_query
     })
+
+@login_required
+def delete_journal_entry(request, entry_id):
+    """Delete a journal entry"""
+    if request.method == 'POST':
+        # Get the journal entry and ensure it belongs to the current user
+        journal_entry = get_object_or_404(JournalEntry, id=entry_id, user=request.user)
+        
+        # Delete the entry
+        journal_entry.delete()
+        
+        # Show success message
+        messages.success(request, 'Journal entry deleted successfully.')
+        
+        # Redirect back to my journals page
+        return redirect('my_journals')
+    
+    # If not POST request, redirect to my journals
+    return redirect('my_journals')
 
 
 @login_required
