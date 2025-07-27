@@ -1,0 +1,29 @@
+# Selenium WebDriver for browser automation
+selenium==4.15.2
+
+# WebDriver Manager for automatic driver management
+webdriver-manager==4.0.1
+
+# Pytest for test framework
+pytest==7.4.3
+
+# Pytest HTML for test reports
+pytest-html==4.1.1
+
+# Pytest-xdist for parallel test execution
+pytest-xdist==3.3.1
+
+# Allure-pytest for detailed test reporting
+allure-pytest==2.13.2
+
+# Python-dotenv for environment variable management
+python-dotenv==1.0.0
+
+# Requests for HTTP operations (if needed)
+requests==2.31.0
+
+# BeautifulSoup4 for HTML parsing (if needed)
+beautifulsoup4==4.12.2
+
+# Pillow for image processing (if needed for screenshots) - updated for Python 3.13 compatibility
+Pillow>=10.2.0 

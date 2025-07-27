@@ -90,13 +90,10 @@ def answer_prompt_view(request):
         messages.error(request, 'Selected theme not found.')
         return redirect('authentication:theme_selector')
     
-    # Generate dynamic prompt using Cohere API
-    prompt = generate_theme_prompt(theme.name, theme.description)
-    print(f"Generated prompt: {prompt}")
-    
     if request.method == 'POST':
         answer = request.POST.get('answer')
         title = request.POST.get('title')
+        prompt = request.POST.get('prompt')
         
         if not answer or not title:
             messages.error(request, 'Please provide both a title and your response.')
@@ -108,7 +105,7 @@ def answer_prompt_view(request):
             })
         
         try:
-            # Create the journal entry
+            # Create the journal entry with the prompt from the form
             journal_entry = JournalEntry.objects.create(
                 user=request.user,
                 theme=theme,
@@ -130,6 +127,10 @@ def answer_prompt_view(request):
                 'title': title
             })
     
+    # Generate dynamic prompt using Cohere API for GET requests
+    prompt = generate_theme_prompt(theme.name, theme.description)
+    print(f"Generated prompt: {prompt}")
+    
     return render(request, 'answer_prompt.html', {
         'theme': theme,
         'prompt': prompt
@@ -143,18 +144,60 @@ def generate_theme_prompt(theme_name, theme_description):
     COHERE_API_KEY = 'yyvejL50thRkw70IRXctuFKyrkBwJ0QUBYBt6nEn'
     COHERE_API_URL = 'https://api.cohere.ai/v1/generate'
     
+    # Theme-specific examples to guide the AI
+    theme_examples = {
+        'Technology Impact': [
+            'How do I balance short-term delivery pressures with long-term technical health?',
+            'Are we investing enough in automated testing and continuous delivery?',
+            'How am I helping engineers develop skills that will sustain technical excellence?'
+        ],
+        'Delivery Impact': [
+            'What\'s one recent delivery mistake we made, and how can we ensure it doesn\'t happen again?',
+            'When have I felt pressure to compromise on quality or take shortcuts? How did I respond?',
+            'How can I foster predictability in delivery without adding stress?'
+        ],
+        'Business Impact': [
+            'How do I ensure that stakeholders see engineering as a strategic partner rather than a service function?',
+            'What\'s one business metric I should pay more attention to as a tech leader?',
+            'Have I effectively explained the ROI of a technical initiative to a stakeholder?'
+        ],
+        'Team Impact': [
+            'How well do I adjust my leadership style based on the situation and individual?',
+            'Have I created a space where people feel safe to speak up and challenge ideas?',
+            'What\'s one strength in a team member I should actively help them develop?'
+        ],
+        'Org Impact': [
+            'How have I contributed beyond my immediate role in the organization?',
+            'What\'s one improvement I could propose that would benefit multiple teams?',
+            'Am I actively advocating for a strong engineering culture that attracts the right people?'
+        ]
+    }
+    
+    # Get examples for the current theme
+    examples = theme_examples.get(theme_name, [])
+    examples_text = '\n'.join([f'• {example}' for example in examples])
+    
     # Create the prompt for Cohere
     system_prompt = f"""
-    You are a helpful assistant that generates journal prompts. 
+    You are a helpful assistant that generates journal prompts for tech leaders and engineering managers.
+    
     Based on the theme "{theme_name}" and its description "{theme_description or 'No description provided'}", 
     generate a short, concise question that encourages reflection and journaling.
     
+    Here are example prompts for this theme to guide your style and approach:
+    {examples_text}
+    
+    IMPORTANT: Do NOT copy or repeat any of the example prompts above. Generate a NEW, UNIQUE question that follows the same style and approach but is completely different from the examples.
+    
     Requirements:
-    - Keep the prompt short and to the point
-    - Make it a single question
-    - Focus on personal reflection and insights
-    - Be relevant to the theme
+    - Keep the prompt short and to the point (one sentence)
+    - Make it a single question that starts with "How", "What", "When", "Have I", or "Am I"
+    - Focus on personal reflection and insights relevant to tech leadership
+    - Be specific and actionable
     - Use clear, engaging language
+    - Avoid generic questions - make them specific to the theme
+    - Follow the style and tone of the examples provided
+    - Create a completely NEW question, not a variation of the examples
     
     Generate only the question, nothing else.
     """
@@ -191,11 +234,17 @@ def generate_theme_prompt(theme_name, theme_description):
         
     except requests.exceptions.RequestException as e:
         print(f"Cohere API error: {e}")
-        # Fallback prompt if API fails
+        # Fallback prompt if API fails - use a relevant example from the theme
+        fallback_prompts = theme_examples.get(theme_name, [])
+        if fallback_prompts:
+            return fallback_prompts[0]  # Return the first example as fallback
         return f"Reflect on how {theme_name.lower()} has impacted your work or life recently. What insights can you draw from this experience?"
     except Exception as e:
         print(f"Unexpected error: {e}")
         # Fallback prompt if any other error occurs
+        fallback_prompts = theme_examples.get(theme_name, [])
+        if fallback_prompts:
+            return fallback_prompts[0]  # Return the first example as fallback
         return f"Reflect on how {theme_name.lower()} has impacted your work or life recently. What insights can you draw from this experience?"
 
 

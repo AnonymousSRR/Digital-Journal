@@ -26,6 +26,7 @@
         
         <form method="post" class="answer-form">
             {% csrf_token %}
+            <input type="hidden" name="prompt" value="{{ prompt }}" id="prompt-field" data-testid="prompt-field">
             <div class="form-group">
                 <label for="title" class="form-label">Journal Title</label>
                 <input type="text" id="title" name="title" class="form-control title-input" placeholder="Enter a title for your journal entry..." value="{{ title|default:'' }}" required>
