@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
+# exit on error
+set -o errexit
 
-# Pin to supported Python version
-pyenv install -s 3.11.9
-pyenv global 3.11.9
-
-# Proceed with your normal build
+# Install dependencies
 pip install -r requirements.txt
-python manage.py collectstatic --noinput
+
+# Collect static files
+python manage.py collectstatic --no-input
+
+# Run database migrations
 python manage.py migrate
