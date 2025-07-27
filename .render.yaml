@@ -1,0 +1,5 @@
+services:
+  - type: web
+    name: digital-journal
+    env:
+      PYTHON_VERSION: "3.11.9"
