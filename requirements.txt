@@ -1,5 +1,5 @@
 # Database dependencies
-psycopg2-binary==2.9.9
+psycopg[binary]==3.1.18
 dj-database-url==3.0.1
 
 # Django and web framework
