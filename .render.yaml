@@ -1,5 +1,6 @@
 services:
   - type: web
     name: digital-journal
+    buildCommand: "./build.sh"
     env:
       PYTHON_VERSION: "3.11.9"
