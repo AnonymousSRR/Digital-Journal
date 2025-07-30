@@ -21,8 +21,8 @@ def my_journals_view(request):
     """
     View for displaying all journal entries for the current user.
     """
-    # Get all journal entries for the current user, ordered by creation date (newest first)
-    journal_entries = JournalEntry.objects.filter(user=request.user).order_by('-created_at')
+    # Get all journal entries for the current user
+    journal_entries = JournalEntry.objects.filter(user=request.user)
     
     # Handle search functionality
     search_query = request.GET.get('search', '')
@@ -33,8 +33,13 @@ def my_journals_view(request):
             models.Q(answer__icontains=search_query)
         )
     
+    # Separate bookmarked and regular entries
+    bookmarked_entries = journal_entries.filter(bookmarked=True).order_by('-created_at')
+    regular_entries = journal_entries.filter(bookmarked=False).order_by('-created_at')
+    
     return render(request, 'my_journals.html', {
-        'journal_entries': journal_entries,
+        'bookmarked_entries': bookmarked_entries,
+        'regular_entries': regular_entries,
         'search_query': search_query
     })
 
@@ -111,7 +116,8 @@ def answer_prompt_view(request):
                 theme=theme,
                 title=title,
                 prompt=prompt,
-                answer=answer
+                answer=answer,
+                bookmarked=False  # Add default value for deployed app
             )
             
             messages.success(request, f'Journal entry "{title}" saved successfully!')
@@ -431,3 +437,31 @@ def logout_view(request):
     logout(request)
     messages.success(request, 'You have been successfully logged out.')
     return redirect('authentication:auth')
+
+@login_required
+def toggle_bookmark(request, entry_id):
+    """Toggle bookmark status of a journal entry"""
+    if request.method == 'POST':
+        # Get the journal entry and ensure it belongs to the current user
+        journal_entry = get_object_or_404(JournalEntry, id=entry_id, user=request.user)
+        
+        # Toggle the bookmark status
+        journal_entry.bookmarked = not journal_entry.bookmarked
+        journal_entry.save()
+        
+        # Return JSON response for AJAX requests
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'bookmarked': journal_entry.bookmarked,
+                'message': 'Entry bookmarked successfully.' if journal_entry.bookmarked else 'Bookmark removed successfully.'
+            })
+        
+        # Show success message for regular requests
+        messages.success(request, 'Entry bookmarked successfully.' if journal_entry.bookmarked else 'Bookmark removed successfully.')
+        
+        # Redirect back to my journals page
+        return redirect('my_journals')
+    
+    # If not POST request, redirect to my journals
+    return redirect('my_journals')

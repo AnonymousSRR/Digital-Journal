@@ -716,7 +716,8 @@ body {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem 0;
+    padding: 2rem 1rem;
+    display: block;
 }
 
 .my-journals-header {
@@ -736,46 +737,106 @@ body {
     margin: 0;
 }
 
+/* Bookmark styles */
+.bookmarked-section {
+    margin-bottom: 3rem;
+    width: 100%;
+}
+
+.bookmarked-title {
+    font-size: 1.5rem;
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #3498db;
+}
+
+.bookmarked-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1.5rem !important;
+    margin-bottom: 0;
+    width: 100%;
+}
+
+.bookmarked-card {
+    border: 2px solid #3498db;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+    position: relative;
+    width: 100%;
+    max-width: 320px;
+}
+
+.bookmarked-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3498db, #2980b9);
+    border-radius: 10px 10px 0 0;
+}
+
+/* Other entries section */
+.other-entries-section {
+    margin-bottom: 3rem;
+    width: 100%;
+}
+
+.other-entries-title {
+    font-size: 1.5rem;
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #7f8c8d;
+}
+
 .journals-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 2rem;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1.5rem !important;
     margin-bottom: 2rem;
+    width: 100%;
 }
 
 /* Journal Cards */
 .journal-card {
     background: white;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
     cursor: pointer;
     position: relative;
     border: 1px solid #e1e5e9;
+    width: 100%;
+    max-width: 320px;
 }
 
 .journal-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Delete Button */
 .delete-journal-btn {
     position: absolute;
-    bottom: 15px;
-    right: 15px;
+    top: 10px;
+    right: 10px;
     background: #ff4757;
     color: white;
     border: none;
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 14px;
     font-weight: bold;
     transition: all 0.2s ease;
     z-index: 10;
@@ -796,14 +857,14 @@ body {
 
 .expand-hint {
     text-align: center;
-    margin-top: 1rem;
+    margin-top: 0.75rem;
     padding-top: 0.5rem;
     border-top: 1px solid #ecf0f1;
 }
 
 .expand-hint span {
     color: #3498db;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 500;
     font-style: italic;
 }
@@ -983,22 +1044,23 @@ body {
 .journal-card-header {
     background: #3498db;
     color: white;
-    padding: 1rem;
+    padding: 0.75rem;
     text-align: center;
     border-bottom: 1px solid #2980b9;
+    border-radius: 8px 8px 0 0;
 }
 
 .journal-date {
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     font-weight: 600;
 }
 
 .journal-card-content {
-    padding: 1.5rem;
+    padding: 1rem;
 }
 
 .journal-detail {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
@@ -1011,27 +1073,27 @@ body {
 .detail-label {
     font-weight: 600;
     color: #2c3e50;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .detail-value {
     color: #34495e;
-    font-size: 1rem;
-    line-height: 1.5;
+    font-size: 0.9rem;
+    line-height: 1.4;
 }
 
 .prompt-text {
     font-style: italic;
     color: #7f8c8d;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
 }
 
 .answer-text {
     color: #2c3e50;
-    font-size: 0.95rem;
-    line-height: 1.6;
+    font-size: 0.85rem;
+    line-height: 1.5;
 }
 
 .no-journals {
@@ -1106,18 +1168,24 @@ body {
         font-size: 2rem;
     }
     
+    .bookmarked-grid {
+        grid-template-columns: repeat(1, 1fr) !important;
+        gap: 1rem !important;
+    }
+    
     .journals-grid {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
+        grid-template-columns: repeat(1, 1fr) !important;
+        gap: 1rem !important;
     }
     
     .journal-card {
         margin: 0 auto;
-        max-width: 400px;
+        max-width: 100%;
+        padding: 12px;
     }
     
     .journal-card-content {
-        padding: 1rem;
+        padding: 0.75rem;
     }
     
     .no-journals {
@@ -1126,6 +1194,16 @@ body {
     
     .navbar-search-input {
         width: 150px;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .bookmarked-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    
+    .journals-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
     }
 }
 
@@ -1199,4 +1277,89 @@ body {
         flex-direction: column;
         gap: 0.5rem;
     }
+}
+
+/* Bookmark styles */
+.bookmarked-section {
+    margin-bottom: 3rem;
+}
+
+.bookmarked-title {
+    font-size: 1.5rem;
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #3498db;
+}
+
+.bookmarked-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 0;
+    width: 100%;
+}
+
+.bookmarked-card {
+    border: 2px solid #3498db;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+    position: relative;
+    max-width: 320px;
+    justify-self: start;
+}
+
+.bookmarked-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3498db, #2980b9);
+    border-radius: 10px 10px 0 0;
+}
+
+.bookmark-btn {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0.4rem;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    opacity: 0.6;
+    color: #7f8c8d;
+}
+
+.bookmark-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    background: rgba(52, 152, 219, 0.1);
+}
+
+.bookmark-btn.bookmarked {
+    opacity: 1;
+    color: #3498db;
+    animation: bookmarkPulse 0.3s ease;
+}
+
+@keyframes bookmarkPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+} 
+
+/* Other entries section */
+.other-entries-section {
+    margin-bottom: 3rem;
+}
+
+.other-entries-title {
+    font-size: 1.5rem;
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #7f8c8d;
 } 

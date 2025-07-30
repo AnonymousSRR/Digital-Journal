@@ -130,6 +130,7 @@ class JournalEntry(models.Model):
     prompt = models.TextField()  # dynamically generated prompt
     answer = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    bookmarked = models.BooleanField(default=False)  # New field for bookmarking
 
     class Meta:
         ordering = ['-created_at']

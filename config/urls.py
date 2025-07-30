@@ -41,6 +41,7 @@ urlpatterns = [
     path('home/answer-prompt/', views.answer_prompt_view, name='answer_prompt'),
     path('home/my-journals/', views.my_journals_view, name='my_journals'),
     path('home/delete-journal/<int:entry_id>/', views.delete_journal_entry, name='delete_journal_entry'),
+    path('home/toggle-bookmark/<int:entry_id>/', views.toggle_bookmark, name='toggle_bookmark'),
     path('login/', include('authentication.urls')),
 ]
 

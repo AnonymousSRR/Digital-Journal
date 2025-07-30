@@ -12,38 +12,94 @@
         <h1 class="my-journals-title">My Journals</h1>
     </div>
     
-    <div class="journals-grid">
-        {% for entry in journal_entries %}
-        <div class="journal-card" data-entry-id="{{ entry.id }}" onclick="openJournalModal({{ entry.id }})">
-            <div class="journal-card-header">
-                <div class="journal-date">{{ entry.created_at|date:"M d, Y" }}</div>
+    <!-- Bookmarked Entries Section -->
+    {% if bookmarked_entries %}
+        <div class="bookmarked-section">
+            <h2 class="bookmarked-title">📌 Bookmarked Entries</h2>
+            <div class="bookmarked-grid">
+                {% for entry in bookmarked_entries %}
+                    <div class="journal-card bookmarked-card" data-entry-id="{{ entry.id }}" onclick="openJournalModal({{ entry.id }})">
+                        <div class="journal-card-header">
+                            <div class="journal-date">{{ entry.created_at|date:"M d, Y" }}</div>
+                            <button class="bookmark-btn bookmarked" onclick="toggleBookmark({{ entry.id }}, event)" title="Remove bookmark">
+                                📌
+                            </button>
+                        </div>
+                        <div class="journal-card-content">
+                            <div class="journal-detail">
+                                <span class="detail-label">Title:</span>
+                                <span class="detail-value">{{ entry.title }}</span>
+                            </div>
+                            <div class="journal-detail">
+                                <span class="detail-label">Theme:</span>
+                                <span class="detail-value">{{ entry.theme.name }}</span>
+                            </div>
+                            <div class="journal-detail">
+                                <span class="detail-label">Prompt:</span>
+                                <span class="detail-value prompt-text">{{ entry.prompt|truncatewords:20 }}</span>
+                            </div>
+                            <div class="journal-detail">
+                                <span class="detail-label">Answer:</span>
+                                <span class="detail-value answer-text">{{ entry.answer|truncatewords:30 }}</span>
+                            </div>
+                            <div class="expand-hint">
+                                <span>Click to expand</span>
+                            </div>
+                        </div>
+                        <button class="delete-journal-btn" onclick="deleteJournalEntry({{ entry.id }}, event)" title="Delete journal entry">
+                            ✕
+                        </button>
+                    </div>
+                {% endfor %}
             </div>
-            <div class="journal-card-content">
-                <div class="journal-detail">
-                    <span class="detail-label">Title:</span>
-                    <span class="detail-value">{{ entry.title }}</span>
-                </div>
-                <div class="journal-detail">
-                    <span class="detail-label">Theme:</span>
-                    <span class="detail-value">{{ entry.theme.name }}</span>
-                </div>
-                <div class="journal-detail">
-                    <span class="detail-label">Prompt:</span>
-                    <span class="detail-value prompt-text">{{ entry.prompt|truncatewords:20 }}</span>
-                </div>
-                <div class="journal-detail">
-                    <span class="detail-label">Answer:</span>
-                    <span class="detail-value answer-text">{{ entry.answer|truncatewords:30 }}</span>
-                </div>
-                <div class="expand-hint">
-                    <span>Click to expand</span>
-                </div>
-            </div>
-            <button class="delete-journal-btn" onclick="deleteJournalEntry({{ entry.id }}, event)" title="Delete journal entry">
-                ✕
-            </button>
         </div>
-        {% empty %}
+    {% endif %}
+    
+    <!-- Regular Entries Section -->
+    {% if regular_entries %}
+        <div class="other-entries-section">
+            <h2 class="other-entries-title">📝 Other Entries</h2>
+            <div class="journals-grid">
+                {% for entry in regular_entries %}
+                    <div class="journal-card" data-entry-id="{{ entry.id }}" onclick="openJournalModal({{ entry.id }})">
+                        <div class="journal-card-header">
+                            <div class="journal-date">{{ entry.created_at|date:"M d, Y" }}</div>
+                            <button class="bookmark-btn" onclick="toggleBookmark({{ entry.id }}, event)" title="Add bookmark">
+                                📌
+                            </button>
+                        </div>
+                        <div class="journal-card-content">
+                            <div class="journal-detail">
+                                <span class="detail-label">Title:</span>
+                                <span class="detail-value">{{ entry.title }}</span>
+                            </div>
+                            <div class="journal-detail">
+                                <span class="detail-label">Theme:</span>
+                                <span class="detail-value">{{ entry.theme.name }}</span>
+                            </div>
+                            <div class="journal-detail">
+                                <span class="detail-label">Prompt:</span>
+                                <span class="detail-value prompt-text">{{ entry.prompt|truncatewords:20 }}</span>
+                            </div>
+                            <div class="journal-detail">
+                                <span class="detail-label">Answer:</span>
+                                <span class="detail-value answer-text">{{ entry.answer|truncatewords:30 }}</span>
+                            </div>
+                            <div class="expand-hint">
+                                <span>Click to expand</span>
+                            </div>
+                        </div>
+                        <button class="delete-journal-btn" onclick="deleteJournalEntry({{ entry.id }}, event)" title="Delete journal entry">
+                            ✕
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+    
+    <!-- No entries message -->
+    {% if not bookmarked_entries and not regular_entries %}
         <div class="no-journals">
             <div class="no-journals-content">
                 <h3>No journal entries yet</h3>
@@ -53,12 +109,16 @@
                 </a>
             </div>
         </div>
-        {% endfor %}
-    </div>
+    {% endif %}
     
-    {% if journal_entries %}
+    {% if bookmarked_entries or regular_entries %}
     <div class="journals-stats">
-        <p class="stats-text">Showing {{ journal_entries.count }} journal entr{{ journal_entries.count|pluralize:"y,ies" }}</p>
+        <p class="stats-text">
+            Showing 
+            {% if bookmarked_entries %}{{ bookmarked_entries.count }} bookmarked entr{{ bookmarked_entries.count|pluralize:"y,ies" }}{% endif %}
+            {% if bookmarked_entries and regular_entries %} and {% endif %}
+            {% if regular_entries %}{{ regular_entries.count }} other entr{{ regular_entries.count|pluralize:"y,ies" }}{% endif %}
+        </p>
     </div>
     {% endif %}
 </div>
@@ -114,13 +174,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Journal entry data
 const journalEntries = {};
-{% for entry in journal_entries %}
+{% for entry in bookmarked_entries %}
 journalEntries[{{ entry.id }}] = {
     date: "{{ entry.created_at|date:'M d, Y' }}",
     title: "{{ entry.title|escapejs }}",
     theme: "{{ entry.theme.name|escapejs }}",
     prompt: "{{ entry.prompt|escapejs }}",
-    answer: "{{ entry.answer|escapejs }}"
+    answer: "{{ entry.answer|escapejs }}",
+    bookmarked: true
+};
+{% endfor %}
+{% for entry in regular_entries %}
+journalEntries[{{ entry.id }}] = {
+    date: "{{ entry.created_at|date:'M d, Y' }}",
+    title: "{{ entry.title|escapejs }}",
+    theme: "{{ entry.theme.name|escapejs }}",
+    prompt: "{{ entry.prompt|escapejs }}",
+    answer: "{{ entry.answer|escapejs }}",
+    bookmarked: false
 };
 {% endfor %}
 
@@ -158,6 +229,28 @@ document.addEventListener('keydown', function(e) {
         closeJournalModal();
     }
 });
+
+function toggleBookmark(entryId, event) {
+    // Prevent the card click event from triggering
+    event.stopPropagation();
+    
+    // Create a form to submit the bookmark toggle request
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/home/toggle-bookmark/${entryId}/`;
+    
+    // Add CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = csrfToken;
+    form.appendChild(csrfInput);
+    
+    // Submit the form
+    document.body.appendChild(form);
+    form.submit();
+}
 
 function deleteJournalEntry(entryId, event) {
     // Prevent the card click event from triggering
