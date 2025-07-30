@@ -1,0 +1,559 @@
+DETAILED UNIT TEST LOG
+================================================================================
+Generated at: 2025-07-30 23:01:46
+
+SUMMARY
+----------------------------------------
+Total Tests: 101
+Passed: 0
+Failed: 0
+Errors: 0
+Success Rate: 0.0%
+
+INDIVIDUAL TEST RESULTS
+----------------------------------------
+
+================================================================================
+
+MODULE: tests.unit_tests.models.test_custom_user_manager
+Status: PASS
+Duration: 2.65s
+Statistics: {'total': 11, 'passed': 0, 'failed': 0, 'errors': 0, 'skipped': 0}
+------------------------------------------------------------
+OUTPUT:
+  Found 11 test(s).
+  Operations to perform:
+    Synchronize unmigrated apps: messages, staticfiles
+    Apply all migrations: admin, auth, authentication, contenttypes, sessions
+  Synchronizing apps without migrations:
+    Creating tables...
+      Running deferred SQL...
+  Running migrations:
+    Applying contenttypes.0001_initial... OK
+    Applying contenttypes.0002_remove_content_type_name... OK
+    Applying auth.0001_initial... OK
+    Applying auth.0002_alter_permission_name_max_length... OK
+    Applying auth.0003_alter_user_email_max_length... OK
+    Applying auth.0004_alter_user_username_opts... OK
+    Applying auth.0005_alter_user_last_login_null... OK
+    Applying auth.0006_require_contenttypes_0002... OK
+    Applying auth.0007_alter_validators_add_error_messages... OK
+    Applying auth.0008_alter_user_username_max_length... OK
+    Applying auth.0009_alter_user_last_name_max_length... OK
+    Applying auth.0010_alter_group_name_max_length... OK
+    Applying auth.0011_update_proxy_permissions... OK
+    Applying auth.0012_alter_user_first_name_max_length... OK
+    Applying authentication.0001_initial... OK
+    Applying admin.0001_initial... OK
+    Applying admin.0002_logentry_remove_auto_add... OK
+    Applying admin.0003_logentry_add_action_flag_choices... OK
+    Applying authentication.0002_theme_journalentry... OK
+    Applying authentication.0003_journalentry_bookmarked... OK
+    Applying sessions.0001_initial... OK
+  System check identified no issues (0 silenced).
+  
+ERRORS:
+  Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+  test_create_superuser_email_normalization (tests.unit_tests.models.test_custom_user_manager.TestCustomUserManager.test_create_superuser_email_normalization)
+  Test email normalization during superuser creation ... ok
+  test_create_superuser_success (tests.unit_tests.models.test_custom_user_manager.TestCustomUserManager.test_create_superuser_success)
+  Test successful superuser creation ... ok
+  test_create_superuser_with_custom_flags (tests.unit_tests.models.test_custom_user_manager.TestCustomUserManager.test_create_superuser_with_custom_flags)
+  Test superuser creation with custom flags ... ok
+  test_create_superuser_without_password (tests.unit_tests.models.test_custom_user_manager.TestCustomUserManager.test_create_superuser_without_password)
+  Test superuser creation without password ... ok
+  test_create_superuser_without_staff_flag (tests.unit_tests.models.test_custom_user_manager.TestCustomUserManager.test_create_superuser_without_staff_flag)
+  Test superuser creation without is_staff=True raises ValueError ... ok
+  test_create_superuser_without_superuser_flag (tests.unit_tests.models.test_custom_user_manager.TestCustomUserManager.test_create_superuser_without_superuser_flag)
+  Test superuser creation without is_superuser=True raises ValueError ... ok
+  test_create_user_email_normalization (tests.unit_tests.models.test_custom_user_manager.TestCustomUserManager.test_create_user_email_normalization)
+  Test email normalization during user creation ... ok
+  test_create_user_success (tests.unit_tests.models.test_custom_user_manager.TestCustomUserManager.test_create_user_success)
+  Test successful user creation ... ok
+  test_create_user_with_extra_fields (tests.unit_tests.models.test_custom_user_manager.TestCustomUserManager.test_create_user_with_extra_fields)
+  Test user creation with extra fields ... ok
+  test_create_user_without_email (tests.unit_tests.models.test_custom_user_manager.TestCustomUserManager.test_create_user_without_email)
+  Test user creation without email raises ValueError ... ok
+  test_create_user_without_password (tests.unit_tests.models.test_custom_user_manager.TestCustomUserManager.test_create_user_without_password)
+  Test user creation without password ... ok
+  ----------------------------------------------------------------------
+  Ran 11 tests in 2.111s
+  OK
+  Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+
+============================================================
+
+MODULE: tests.unit_tests.models.test_custom_user_methods
+Status: PASS
+Duration: 4.78s
+Statistics: {'total': 19, 'passed': 0, 'failed': 0, 'errors': 0, 'skipped': 0}
+------------------------------------------------------------
+OUTPUT:
+  Found 19 test(s).
+  Operations to perform:
+    Synchronize unmigrated apps: messages, staticfiles
+    Apply all migrations: admin, auth, authentication, contenttypes, sessions
+  Synchronizing apps without migrations:
+    Creating tables...
+      Running deferred SQL...
+  Running migrations:
+    Applying contenttypes.0001_initial... OK
+    Applying contenttypes.0002_remove_content_type_name... OK
+    Applying auth.0001_initial... OK
+    Applying auth.0002_alter_permission_name_max_length... OK
+    Applying auth.0003_alter_user_email_max_length... OK
+    Applying auth.0004_alter_user_username_opts... OK
+    Applying auth.0005_alter_user_last_login_null... OK
+    Applying auth.0006_require_contenttypes_0002... OK
+    Applying auth.0007_alter_validators_add_error_messages... OK
+    Applying auth.0008_alter_user_username_max_length... OK
+    Applying auth.0009_alter_user_last_name_max_length... OK
+    Applying auth.0010_alter_group_name_max_length... OK
+    Applying auth.0011_update_proxy_permissions... OK
+    Applying auth.0012_alter_user_first_name_max_length... OK
+    Applying authentication.0001_initial... OK
+    Applying admin.0001_initial... OK
+    Applying admin.0002_logentry_remove_auto_add... OK
+    Applying admin.0003_logentry_add_action_flag_choices... OK
+    Applying authentication.0002_theme_journalentry... OK
+    Applying authentication.0003_journalentry_bookmarked... OK
+    Applying sessions.0001_initial... OK
+  System check identified no issues (0 silenced).
+  
+ERRORS:
+  Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+  test_clean_calls_parent_clean (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_clean_calls_parent_clean)
+  Test clean method calls parent clean method ... ok
+  test_clean_email_already_normalized (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_clean_email_already_normalized)
+  Test clean method with already normalized email ... ok
+  test_clean_email_normalization (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_clean_email_normalization)
+  Test clean method normalizes email ... ok
+  test_clean_email_with_whitespace (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_clean_email_with_whitespace)
+  Test clean method with whitespace in email ... ok
+  test_clean_without_email (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_clean_without_email)
+  Test clean method without email ... ok
+  test_get_full_name (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_get_full_name)
+  Test get_full_name method ... ok
+  test_get_full_name_with_both_empty (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_get_full_name_with_both_empty)
+  Test get_full_name method with both names empty ... ok
+  test_get_full_name_with_empty_first_name (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_get_full_name_with_empty_first_name)
+  Test get_full_name method with empty first name ... ok
+  test_get_full_name_with_empty_last_name (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_get_full_name_with_empty_last_name)
+  Test get_full_name method with empty last name ... ok
+  test_get_full_name_with_whitespace (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_get_full_name_with_whitespace)
+  Test get_full_name method with whitespace in names ... ok
+  test_get_short_name (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_get_short_name)
+  Test get_short_name method ... ok
+  test_get_short_name_with_empty_first_name (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_get_short_name_with_empty_first_name)
+  Test get_short_name method with empty first name ... ok
+  test_get_short_name_with_whitespace (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_get_short_name_with_whitespace)
+  Test get_short_name method with whitespace in first name ... ok
+  test_save_calls_clean (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_save_calls_clean)
+  Test save method calls clean ... ok
+  test_save_preserves_other_fields (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_save_preserves_other_fields)
+  Test save method preserves other fields ... ok
+  test_str_representation (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_str_representation)
+  Test __str__ method ... ok
+  test_str_representation_with_empty_names (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_str_representation_with_empty_names)
+  Test __str__ method with empty names ... ok
+  test_superuser_creation_with_manager (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_superuser_creation_with_manager)
+  Test superuser creation through manager calls clean ... ok
+  test_user_creation_with_manager (tests.unit_tests.models.test_custom_user_methods.TestCustomUserMethods.test_user_creation_with_manager)
+  Test user creation through manager calls clean ... ok
+  ----------------------------------------------------------------------
+  Ran 19 tests in 4.427s
+  OK
+  Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+
+============================================================
+
+MODULE: tests.unit_tests.views.test_custom_functions
+Status: PASS
+Duration: 0.58s
+Statistics: {'total': 11, 'passed': 0, 'failed': 0, 'errors': 0, 'skipped': 0}
+------------------------------------------------------------
+OUTPUT:
+  Found 11 test(s).
+  Operations to perform:
+    Synchronize unmigrated apps: messages, staticfiles
+    Apply all migrations: admin, auth, authentication, contenttypes, sessions
+  Synchronizing apps without migrations:
+    Creating tables...
+      Running deferred SQL...
+  Running migrations:
+    Applying contenttypes.0001_initial... OK
+    Applying contenttypes.0002_remove_content_type_name... OK
+    Applying auth.0001_initial... OK
+    Applying auth.0002_alter_permission_name_max_length... OK
+    Applying auth.0003_alter_user_email_max_length... OK
+    Applying auth.0004_alter_user_username_opts... OK
+    Applying auth.0005_alter_user_last_login_null... OK
+    Applying auth.0006_require_contenttypes_0002... OK
+    Applying auth.0007_alter_validators_add_error_messages... OK
+    Applying auth.0008_alter_user_username_max_length... OK
+    Applying auth.0009_alter_user_last_name_max_length... OK
+    Applying auth.0010_alter_group_name_max_length... OK
+    Applying auth.0011_update_proxy_permissions... OK
+    Applying auth.0012_alter_user_first_name_max_length... OK
+    Applying authentication.0001_initial... OK
+    Applying admin.0001_initial... OK
+    Applying admin.0002_logentry_remove_auto_add... OK
+    Applying admin.0003_logentry_add_action_flag_choices... OK
+    Applying authentication.0002_theme_journalentry... OK
+    Applying authentication.0003_journalentry_bookmarked... OK
+    Applying sessions.0001_initial... OK
+  System check identified no issues (0 silenced).
+  
+ERRORS:
+  Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+  test_get_active_tab_default (tests.unit_tests.views.test_custom_functions.TestAuthenticationViewHelperMethods.test_get_active_tab_default)
+  Test _get_active_tab method with no tab specified ... ok
+  test_get_active_tab_from_get_signin (tests.unit_tests.views.test_custom_functions.TestAuthenticationViewHelperMethods.test_get_active_tab_from_get_signin)
+  Test _get_active_tab method with GET signin tab ... ok
+  test_get_active_tab_from_get_signup (tests.unit_tests.views.test_custom_functions.TestAuthenticationViewHelperMethods.test_get_active_tab_from_get_signup)
+  Test _get_active_tab method with GET signup tab ... ok
+  test_get_active_tab_from_post_signin (tests.unit_tests.views.test_custom_functions.TestAuthenticationViewHelperMethods.test_get_active_tab_from_post_signin)
+  Test _get_active_tab method with POST signin action ... ok
+  test_get_active_tab_from_post_signup (tests.unit_tests.views.test_custom_functions.TestAuthenticationViewHelperMethods.test_get_active_tab_from_post_signup)
+  Test _get_active_tab method with POST signup action ... ok
+  test_get_context_data_signin_tab (tests.unit_tests.views.test_custom_functions.TestAuthenticationViewHelperMethods.test_get_context_data_signin_tab)
+  Test get_context_data method with signin tab active ... ok
+  test_get_context_data_signup_tab (tests.unit_tests.views.test_custom_functions.TestAuthenticationViewHelperMethods.test_get_context_data_signup_tab)
+  Test get_context_data method with signup tab active ... ok
+  test_handle_signin_invalid_credentials (tests.unit_tests.views.test_custom_functions.TestAuthenticationViewHelperMethods.test_handle_signin_invalid_credentials)
+  Test _handle_signin method with invalid credentials ... ok
+  test_handle_signin_success (tests.unit_tests.views.test_custom_functions.TestAuthenticationViewHelperMethods.test_handle_signin_success)
+  Test _handle_signin method with successful authentication ... ok
+  test_handle_signup_exception (tests.unit_tests.views.test_custom_functions.TestAuthenticationViewHelperMethods.test_handle_signup_exception)
+  Test _handle_signup method with exception during user creation ... ok
+  test_handle_signup_success (tests.unit_tests.views.test_custom_functions.TestAuthenticationViewHelperMethods.test_handle_signup_success)
+  Test _handle_signup method with successful user creation ... ok
+  ----------------------------------------------------------------------
+  Ran 11 tests in 0.222s
+  OK
+  Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+
+============================================================
+
+MODULE: tests.unit_tests.models.test_custom_user
+Status: PASS
+Duration: 2.49s
+Statistics: {'total': 10, 'passed': 0, 'failed': 0, 'errors': 0, 'skipped': 0}
+------------------------------------------------------------
+OUTPUT:
+  Found 10 test(s).
+  Operations to perform:
+    Synchronize unmigrated apps: messages, staticfiles
+    Apply all migrations: admin, auth, authentication, contenttypes, sessions
+  Synchronizing apps without migrations:
+    Creating tables...
+      Running deferred SQL...
+  Running migrations:
+    Applying contenttypes.0001_initial... OK
+    Applying contenttypes.0002_remove_content_type_name... OK
+    Applying auth.0001_initial... OK
+    Applying auth.0002_alter_permission_name_max_length... OK
+    Applying auth.0003_alter_user_email_max_length... OK
+    Applying auth.0004_alter_user_username_opts... OK
+    Applying auth.0005_alter_user_last_login_null... OK
+    Applying auth.0006_require_contenttypes_0002... OK
+    Applying auth.0007_alter_validators_add_error_messages... OK
+    Applying auth.0008_alter_user_username_max_length... OK
+    Applying auth.0009_alter_user_last_name_max_length... OK
+    Applying auth.0010_alter_group_name_max_length... OK
+    Applying auth.0011_update_proxy_permissions... OK
+    Applying auth.0012_alter_user_first_name_max_length... OK
+    Applying authentication.0001_initial... OK
+    Applying admin.0001_initial... OK
+    Applying admin.0002_logentry_remove_auto_add... OK
+    Applying admin.0003_logentry_add_action_flag_choices... OK
+    Applying authentication.0002_theme_journalentry... OK
+    Applying authentication.0003_journalentry_bookmarked... OK
+    Applying sessions.0001_initial... OK
+  System check identified no issues (0 silenced).
+  
+ERRORS:
+  Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+  test_clean_method (tests.unit_tests.models.test_custom_user.CustomUserModelTest.test_clean_method)
+  Test custom clean method for email normalization ... ok
+  test_get_full_name (tests.unit_tests.models.test_custom_user.CustomUserModelTest.test_get_full_name)
+  Test custom get_full_name method ... ok
+  test_get_full_name_with_empty_names (tests.unit_tests.models.test_custom_user.CustomUserModelTest.test_get_full_name_with_empty_names)
+  Test get_full_name with empty names ... ok
+  test_get_short_name (tests.unit_tests.models.test_custom_user.CustomUserModelTest.test_get_short_name)
+  Test custom get_short_name method ... ok
+  test_meta_configuration (tests.unit_tests.models.test_custom_user.CustomUserModelTest.test_meta_configuration)
+  Test custom meta configuration ... ok
+  test_required_fields_configuration (tests.unit_tests.models.test_custom_user.CustomUserModelTest.test_required_fields_configuration)
+  Test custom required fields configuration ... ok
+  test_user_string_representation (tests.unit_tests.models.test_custom_user.CustomUserModelTest.test_user_string_representation)
+  Test custom string representation method ... ok
+  test_journal_entry_ordering (tests.unit_tests.models.test_custom_user.JournalEntryModelTest.test_journal_entry_ordering)
+  Test custom ordering configuration ... ok
+  test_journal_entry_string_representation (tests.unit_tests.models.test_custom_user.JournalEntryModelTest.test_journal_entry_string_representation)
+  Test custom string representation method ... ok
+  test_theme_string_representation (tests.unit_tests.models.test_custom_user.ThemeModelTest.test_theme_string_representation)
+  Test custom string representation method ... ok
+  ----------------------------------------------------------------------
+  Ran 10 tests in 2.128s
+  OK
+  Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+
+============================================================
+
+MODULE: tests.unit_tests.views.test_authentication_views
+Status: PASS
+Duration: 3.16s
+Statistics: {'total': 12, 'passed': 0, 'failed': 0, 'errors': 0, 'skipped': 0}
+------------------------------------------------------------
+OUTPUT:
+  Found 12 test(s).
+  Operations to perform:
+    Synchronize unmigrated apps: messages, staticfiles
+    Apply all migrations: admin, auth, authentication, contenttypes, sessions
+  Synchronizing apps without migrations:
+    Creating tables...
+      Running deferred SQL...
+  Running migrations:
+    Applying contenttypes.0001_initial... OK
+    Applying contenttypes.0002_remove_content_type_name... OK
+    Applying auth.0001_initial... OK
+    Applying auth.0002_alter_permission_name_max_length... OK
+    Applying auth.0003_alter_user_email_max_length... OK
+    Applying auth.0004_alter_user_username_opts... OK
+    Applying auth.0005_alter_user_last_login_null... OK
+    Applying auth.0006_require_contenttypes_0002... OK
+    Applying auth.0007_alter_validators_add_error_messages... OK
+    Applying auth.0008_alter_user_username_max_length... OK
+    Applying auth.0009_alter_user_last_name_max_length... OK
+    Applying auth.0010_alter_group_name_max_length... OK
+    Applying auth.0011_update_proxy_permissions... OK
+    Applying auth.0012_alter_user_first_name_max_length... OK
+    Applying authentication.0001_initial... OK
+    Applying admin.0001_initial... OK
+    Applying admin.0002_logentry_remove_auto_add... OK
+    Applying admin.0003_logentry_add_action_flag_choices... OK
+    Applying authentication.0002_theme_journalentry... OK
+    Applying authentication.0003_journalentry_bookmarked... OK
+    Applying sessions.0001_initial... OK
+  System check identified no issues (0 silenced).
+  
+ERRORS:
+  Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+  test_authentication_view_get_signin_tab (tests.unit_tests.views.test_authentication_views.TestAuthenticationView.test_authentication_view_get_signin_tab)
+  Test custom get_form_class method with signin tab ... ok
+  test_authentication_view_get_signup_tab (tests.unit_tests.views.test_authentication_views.TestAuthenticationView.test_authentication_view_get_signup_tab)
+  Test custom get_form_class method with signup tab ... ok
+  test_get_active_tab_default (tests.unit_tests.views.test_authentication_views.TestAuthenticationView.test_get_active_tab_default)
+  Test custom _get_active_tab method default value ... ok
+  test_get_active_tab_from_get (tests.unit_tests.views.test_authentication_views.TestAuthenticationView.test_get_active_tab_from_get)
+  Test custom _get_active_tab method from GET request ... ok
+  test_my_journals_view_bookmarked_first (tests.unit_tests.views.test_authentication_views.TestMyJournalsView.test_my_journals_view_bookmarked_first)
+  Test that bookmarked entries appear first ... ok
+  test_signin_view_get_context_data (tests.unit_tests.views.test_authentication_views.TestSignInView.test_signin_view_get_context_data)
+  Test custom get_context_data method ... ok
+  test_toggle_bookmark_add_bookmark (tests.unit_tests.views.test_authentication_views.TestToggleBookmark.test_toggle_bookmark_add_bookmark)
+  Test adding a bookmark to an entry ... ok
+  test_toggle_bookmark_ajax_request (tests.unit_tests.views.test_authentication_views.TestToggleBookmark.test_toggle_bookmark_ajax_request)
+  Test toggle bookmark with AJAX request ... ok
+  test_toggle_bookmark_get_request (tests.unit_tests.views.test_authentication_views.TestToggleBookmark.test_toggle_bookmark_get_request)
+  Test toggle bookmark with GET request (should redirect) ... ok
+  test_toggle_bookmark_invalid_entry_id (tests.unit_tests.views.test_authentication_views.TestToggleBookmark.test_toggle_bookmark_invalid_entry_id)
+  Test toggle bookmark with invalid entry ID ... ok
+  test_toggle_bookmark_remove_bookmark (tests.unit_tests.views.test_authentication_views.TestToggleBookmark.test_toggle_bookmark_remove_bookmark)
+  Test removing a bookmark from an entry ... ok
+  test_toggle_bookmark_unauthorized_user (tests.unit_tests.views.test_authentication_views.TestToggleBookmark.test_toggle_bookmark_unauthorized_user)
+  Test toggle bookmark with unauthorized user ... ok
+  ----------------------------------------------------------------------
+  Ran 12 tests in 2.791s
+  OK
+  Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+
+============================================================
+
+MODULE: tests.unit_tests.forms.test_custom_user_creation_form
+Status: PASS
+Duration: 2.10s
+Statistics: {'total': 19, 'passed': 0, 'failed': 0, 'errors': 0, 'skipped': 0}
+------------------------------------------------------------
+OUTPUT:
+  Found 19 test(s).
+  Operations to perform:
+    Synchronize unmigrated apps: messages, staticfiles
+    Apply all migrations: admin, auth, authentication, contenttypes, sessions
+  Synchronizing apps without migrations:
+    Creating tables...
+      Running deferred SQL...
+  Running migrations:
+    Applying contenttypes.0001_initial... OK
+    Applying contenttypes.0002_remove_content_type_name... OK
+    Applying auth.0001_initial... OK
+    Applying auth.0002_alter_permission_name_max_length... OK
+    Applying auth.0003_alter_user_email_max_length... OK
+    Applying auth.0004_alter_user_username_opts... OK
+    Applying auth.0005_alter_user_last_login_null... OK
+    Applying auth.0006_require_contenttypes_0002... OK
+    Applying auth.0007_alter_validators_add_error_messages... OK
+    Applying auth.0008_alter_user_username_max_length... OK
+    Applying auth.0009_alter_user_last_name_max_length... OK
+    Applying auth.0010_alter_group_name_max_length... OK
+    Applying auth.0011_update_proxy_permissions... OK
+    Applying auth.0012_alter_user_first_name_max_length... OK
+    Applying authentication.0001_initial... OK
+    Applying admin.0001_initial... OK
+    Applying admin.0002_logentry_remove_auto_add... OK
+    Applying admin.0003_logentry_add_action_flag_choices... OK
+    Applying authentication.0002_theme_journalentry... OK
+    Applying authentication.0003_journalentry_bookmarked... OK
+    Applying sessions.0001_initial... OK
+  System check identified no issues (0 silenced).
+  
+ERRORS:
+  Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+  test_clean_both_passwords_empty (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_clean_both_passwords_empty)
+  Test clean method with both passwords empty ... ok
+  test_clean_email_case_insensitive_duplicate (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_clean_email_case_insensitive_duplicate)
+  Test clean_email method with case-insensitive duplicate email ... ok
+  test_clean_email_duplicate (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_clean_email_duplicate)
+  Test clean_email method with duplicate email ... ok
+  test_clean_email_empty (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_clean_email_empty)
+  Test clean_email method with empty email ... ok
+  test_clean_email_normalization (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_clean_email_normalization)
+  Test clean_email method normalizes email ... ok
+  test_clean_email_success (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_clean_email_success)
+  Test clean_email method with valid email ... ok
+  test_clean_email_with_whitespace (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_clean_email_with_whitespace)
+  Test clean_email method with whitespace in email ... ok
+  test_clean_password1_empty (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_clean_password1_empty)
+  Test clean method with empty password1 ... ok
+  test_clean_password2_empty (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_clean_password2_empty)
+  Test clean method with empty password2 ... ok
+  test_clean_password_mismatch (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_clean_password_mismatch)
+  Test clean method with password mismatch ... ok
+  test_clean_success (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_clean_success)
+  Test clean method with valid data ... ok
+  test_form_validation_invalid_email (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_form_validation_invalid_email)
+  Test form validation with invalid email format ... ok
+  test_form_validation_missing_required_fields (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_form_validation_missing_required_fields)
+  Test form validation with missing required fields ... ok
+  test_form_validation_success (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_form_validation_success)
+  Test complete form validation with valid data ... ok
+  test_form_validation_weak_password (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_form_validation_weak_password)
+  Test form validation with weak password ... ok
+  test_save_email_normalization (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_save_email_normalization)
+  Test save method normalizes email ... ok
+  test_save_success (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_save_success)
+  Test save method with valid data ... ok
+  test_save_with_commit_false (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_save_with_commit_false)
+  Test save method with commit=False ... ok
+  test_save_with_whitespace_in_names (tests.unit_tests.forms.test_custom_user_creation_form.TestCustomUserCreationForm.test_save_with_whitespace_in_names)
+  Test save method handles whitespace in names ... ok
+  ----------------------------------------------------------------------
+  Ran 19 tests in 1.733s
+  OK
+  Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+
+============================================================
+
+MODULE: tests.unit_tests.forms.test_custom_authentication_form
+Status: FAIL
+Duration: 6.11s
+Statistics: {'total': 19, 'passed': 0, 'failed': 0, 'errors': 0, 'skipped': 0}
+------------------------------------------------------------
+OUTPUT:
+  Found 19 test(s).
+  Operations to perform:
+    Synchronize unmigrated apps: messages, staticfiles
+    Apply all migrations: admin, auth, authentication, contenttypes, sessions
+  Synchronizing apps without migrations:
+    Creating tables...
+      Running deferred SQL...
+  Running migrations:
+    Applying contenttypes.0001_initial... OK
+    Applying contenttypes.0002_remove_content_type_name... OK
+    Applying auth.0001_initial... OK
+    Applying auth.0002_alter_permission_name_max_length... OK
+    Applying auth.0003_alter_user_email_max_length... OK
+    Applying auth.0004_alter_user_username_opts... OK
+    Applying auth.0005_alter_user_last_login_null... OK
+    Applying auth.0006_require_contenttypes_0002... OK
+    Applying auth.0007_alter_validators_add_error_messages... OK
+    Applying auth.0008_alter_user_username_max_length... OK
+    Applying auth.0009_alter_user_last_name_max_length... OK
+    Applying auth.0010_alter_group_name_max_length... OK
+    Applying auth.0011_update_proxy_permissions... OK
+    Applying auth.0012_alter_user_first_name_max_length... OK
+    Applying authentication.0001_initial... OK
+    Applying admin.0001_initial... OK
+    Applying admin.0002_logentry_remove_auto_add... OK
+    Applying admin.0003_logentry_add_action_flag_choices... OK
+    Applying authentication.0002_theme_journalentry... OK
+    Applying authentication.0003_journalentry_bookmarked... OK
+    Applying sessions.0001_initial... OK
+  System check identified no issues (0 silenced).
+  
+ERRORS:
+  Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+  test_clean_username_empty (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_clean_username_empty)
+  Test clean_username method with empty username ... FAIL
+  test_clean_username_none (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_clean_username_none)
+  Test clean_username method with None username ... ok
+  test_clean_username_normalization (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_clean_username_normalization)
+  Test clean_username method normalizes email ... ok
+  test_clean_username_success (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_clean_username_success)
+  Test clean_username method with valid email ... ok
+  test_clean_username_with_whitespace (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_clean_username_with_whitespace)
+  Test clean_username method with whitespace in email ... ok
+  test_confirm_login_allowed_active_user (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_confirm_login_allowed_active_user)
+  Test confirm_login_allowed method with active user ... ok
+  test_confirm_login_allowed_calls_parent (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_confirm_login_allowed_calls_parent)
+  Test confirm_login_allowed method calls parent method ... ok
+  test_confirm_login_allowed_inactive_user (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_confirm_login_allowed_inactive_user)
+  Test confirm_login_allowed method with inactive user ... ok
+  test_form_field_attributes (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_form_field_attributes)
+  Test form field attributes are correctly set ... ok
+  test_form_field_help_text (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_form_field_help_text)
+  Test form field help text is correctly set ... ok
+  test_form_field_labels (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_form_field_labels)
+  Test form field labels are correctly set ... ok
+  test_form_field_widgets (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_form_field_widgets)
+  Test form field widgets are correctly set ... ok
+  test_form_validation_empty_password (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_form_validation_empty_password)
+  Test form validation with empty password ... ok
+  test_form_validation_empty_username (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_form_validation_empty_username)
+  Test form validation with empty username ... ok
+  test_form_validation_invalid_email_format (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_form_validation_invalid_email_format)
+  Test form validation with invalid email format ... ok
+  test_form_validation_missing_password (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_form_validation_missing_password)
+  Test form validation with missing password ... ok
+  test_form_validation_missing_username (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_form_validation_missing_username)
+  Test form validation with missing username ... ok
+  test_form_validation_success (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_form_validation_success)
+  Test complete form validation with valid data ... ok
+  test_form_validation_with_whitespace (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_form_validation_with_whitespace)
+  Test form validation handles whitespace correctly ... FAIL
+  ======================================================================
+  FAIL: test_clean_username_empty (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_clean_username_empty)
+  Test clean_username method with empty username
+  ----------------------------------------------------------------------
+  Traceback (most recent call last):
+    File "/Users/sahil/Desktop/joural-app/tests/unit_tests/forms/test_custom_authentication_form.py", line 67, in test_clean_username_empty
+      assert cleaned_username == ''
+             ^^^^^^^^^^^^^^^^^^^^^^
+  AssertionError
+  ======================================================================
+  FAIL: test_form_validation_with_whitespace (tests.unit_tests.forms.test_custom_authentication_form.TestCustomAuthenticationForm.test_form_validation_with_whitespace)
+  Test form validation handles whitespace correctly
+  ----------------------------------------------------------------------
+  Traceback (most recent call last):
+    File "/Users/sahil/Desktop/joural-app/tests/unit_tests/forms/test_custom_authentication_form.py", line 212, in test_form_validation_with_whitespace
+      assert form.cleaned_data['password'] == '  testpass123  '
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  AssertionError
+  ----------------------------------------------------------------------
+  Ran 19 tests in 5.746s
+  FAILED (failures=2)
+  Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+
+============================================================
+
