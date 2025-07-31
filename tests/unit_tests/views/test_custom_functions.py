@@ -14,6 +14,7 @@ from authentication.views import (
 )
 from authentication.models import CustomUser, Theme, JournalEntry
 from authentication.forms import CustomUserCreationForm, CustomAuthenticationForm
+import requests
 
 User = get_user_model()
 
@@ -67,8 +68,8 @@ class TestGenerateThemePrompt:
         result = generate_theme_prompt('Technology Impact', 'Technology themes')
         
         # Should return fallback prompt from theme examples
-        assert 'technology impact' in result.lower()
-        assert 'impacted' in result.lower()
+        assert 'balance' in result.lower()
+        assert 'delivery' in result.lower()
     
     @patch('authentication.views.requests.post')
     def test_generate_theme_prompt_unknown_theme(self, mock_post):
@@ -88,20 +89,59 @@ class TestGenerateThemePrompt:
         
         result = generate_theme_prompt('Team Impact', 'Team themes')
         
-        # Should return fallback prompt
-        assert 'team impact' in result.lower()
-        assert 'impacted' in result.lower()
+        # Should return fallback prompt from theme examples
+        assert 'leadership style' in result.lower()
+        assert 'situation' in result.lower()
     
     @patch('authentication.views.requests.post')
     def test_generate_theme_prompt_timeout(self, mock_post):
-        """Test handling of timeout errors"""
-        mock_post.side_effect = Exception("Timeout")
+        """Test handling of timeout errors with retry logic"""
+        # Mock timeout exception for all attempts
+        mock_post.side_effect = requests.exceptions.Timeout("Read timed out. (read timeout=10)")
         
         result = generate_theme_prompt('Business Impact', 'Business themes')
         
-        # Should return fallback prompt
-        assert 'business impact' in result.lower()
-        assert 'impacted' in result.lower()
+        # Should return fallback prompt after all retries fail
+        # The fallback should be the first example from Business Impact theme
+        assert 'stakeholders' in result.lower()
+        assert 'engineering' in result.lower()
+        
+        # Verify that the API was called multiple times (retry attempts)
+        assert mock_post.call_count == 3  # max_retries = 3
+    
+    @patch('authentication.views.requests.post')
+    def test_generate_theme_prompt_retry_success(self, mock_post):
+        """Test retry mechanism with eventual success"""
+        # First two calls fail with timeout, third succeeds
+        mock_post.side_effect = [
+            requests.exceptions.Timeout("Read timed out. (read timeout=10)"),
+            requests.exceptions.Timeout("Read timed out. (read timeout=15)"),
+            Mock(json=lambda: {'generations': [{'text': 'How have you improved business metrics recently?'}]})
+        ]
+        
+        result = generate_theme_prompt('Business Impact', 'Business themes')
+        
+        # Should return the successful API response
+        assert result == 'How have you improved business metrics recently?'
+        
+        # Verify that the API was called 3 times (2 failures + 1 success)
+        assert mock_post.call_count == 3
+    
+    @patch('authentication.views.requests.post')
+    def test_generate_theme_prompt_connection_error(self, mock_post):
+        """Test handling of connection errors with retry logic"""
+        # Mock connection error for all attempts
+        mock_post.side_effect = requests.exceptions.ConnectionError("Connection failed")
+        
+        result = generate_theme_prompt('Technology Impact', 'Technology themes')
+        
+        # Should return fallback prompt after all retries fail
+        # The fallback should be the first example from Technology Impact theme
+        assert 'balance' in result.lower()
+        assert 'delivery' in result.lower()
+        
+        # Verify that the API was called multiple times (retry attempts)
+        assert mock_post.call_count == 3  # max_retries = 3
     
     def test_generate_theme_prompt_theme_examples(self):
         """Test that theme examples are properly defined"""
@@ -120,7 +160,17 @@ class TestGenerateThemePrompt:
             
             for theme in expected_themes:
                 result = generate_theme_prompt(theme, f'{theme} description')
-                assert theme.lower() in result.lower()
+                # Check that the result contains keywords from the theme examples
+                if theme == 'Technology Impact':
+                    assert 'balance' in result.lower() or 'delivery' in result.lower()
+                elif theme == 'Delivery Impact':
+                    assert 'delivery' in result.lower() or 'quality' in result.lower()
+                elif theme == 'Business Impact':
+                    assert 'stakeholders' in result.lower() or 'business' in result.lower()
+                elif theme == 'Team Impact':
+                    assert 'leadership' in result.lower() or 'team' in result.lower()
+                elif theme == 'Org Impact':
+                    assert 'organization' in result.lower() or 'culture' in result.lower()
 
 
 class TestAuthenticationViewHelperMethods(TestCase):

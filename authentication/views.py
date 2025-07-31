@@ -13,6 +13,7 @@ from .models import CustomUser, Theme, JournalEntry
 from .forms import CustomUserCreationForm, CustomAuthenticationForm
 import requests
 import json
+import time
 from django.db import models
 
 
@@ -208,50 +209,96 @@ def generate_theme_prompt(theme_name, theme_description):
     Generate only the question, nothing else.
     """
     
-    try:
-        headers = {
-            'Authorization': f'Bearer {COHERE_API_KEY}',
-            'Content-Type': 'application/json'
-        }
-        
-        data = {
-            'model': 'command',
-            'prompt': system_prompt,
-            'max_tokens': 100,
-            'temperature': 0.7,
-            'k': 0,
-            'stop_sequences': [],
-            'return_likelihoods': 'NONE'
-        }
-        
-        print(f"Calling Cohere API for theme: {theme_name}")
-        response = requests.post(COHERE_API_URL, headers=headers, json=data, timeout=10)
-        response.raise_for_status()
-        
-        result = response.json()
-        generated_prompt = result['generations'][0]['text'].strip()
-        
-        # Clean up the response
-        if generated_prompt.startswith('"') and generated_prompt.endswith('"'):
-            generated_prompt = generated_prompt[1:-1]
-        
-        print(f"Generated prompt: {generated_prompt}")
-        return generated_prompt
-        
-    except requests.exceptions.RequestException as e:
-        print(f"Cohere API error: {e}")
-        # Fallback prompt if API fails - use a relevant example from the theme
-        fallback_prompts = theme_examples.get(theme_name, [])
-        if fallback_prompts:
-            return fallback_prompts[0]  # Return the first example as fallback
-        return f"Reflect on how {theme_name.lower()} has impacted your work or life recently. What insights can you draw from this experience?"
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-        # Fallback prompt if any other error occurs
-        fallback_prompts = theme_examples.get(theme_name, [])
-        if fallback_prompts:
-            return fallback_prompts[0]  # Return the first example as fallback
-        return f"Reflect on how {theme_name.lower()} has impacted your work or life recently. What insights can you draw from this experience?"
+    # Retry configuration
+    max_retries = 3
+    retry_delay = 2  # seconds
+    
+    for attempt in range(max_retries):
+        try:
+            headers = {
+                'Authorization': f'Bearer {COHERE_API_KEY}',
+                'Content-Type': 'application/json'
+            }
+            
+            data = {
+                'model': 'command',
+                'prompt': system_prompt,
+                'max_tokens': 100,
+                'temperature': 0.7,
+                'k': 0,
+                'stop_sequences': [],
+                'return_likelihoods': 'NONE'
+            }
+            
+            print(f"Calling Cohere API for theme: {theme_name} (attempt {attempt + 1}/{max_retries})")
+            
+            # Increase timeout for each retry attempt
+            timeout = 10 + (attempt * 5)  # 10s, 15s, 20s
+            
+            response = requests.post(
+                COHERE_API_URL, 
+                headers=headers, 
+                json=data, 
+                timeout=timeout
+            )
+            response.raise_for_status()
+            
+            result = response.json()
+            generated_prompt = result['generations'][0]['text'].strip()
+            
+            # Clean up the response
+            if generated_prompt.startswith('"') and generated_prompt.endswith('"'):
+                generated_prompt = generated_prompt[1:-1]
+            
+            print(f"Generated prompt: {generated_prompt}")
+            return generated_prompt
+            
+        except requests.exceptions.Timeout as e:
+            print(f"Cohere API timeout error (attempt {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                print(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                print("Max retries reached. Using fallback prompt.")
+                break
+                
+        except requests.exceptions.ConnectionError as e:
+            print(f"Cohere API connection error (attempt {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                print(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                print("Max retries reached. Using fallback prompt.")
+                break
+                
+        except requests.exceptions.RequestException as e:
+            print(f"Cohere API request error (attempt {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                print(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                print("Max retries reached. Using fallback prompt.")
+                break
+                
+        except (KeyError, IndexError, ValueError) as e:
+            print(f"Cohere API response parsing error: {e}")
+            # Don't retry for parsing errors as they indicate malformed response
+            break
+            
+        except Exception as e:
+            print(f"Unexpected error during Cohere API call: {e}")
+            # Don't retry for unexpected errors
+            break
+    
+    # Fallback logic - use a relevant example from the theme
+    print("Using fallback prompt due to API errors")
+    fallback_prompts = theme_examples.get(theme_name, [])
+    if fallback_prompts:
+        return fallback_prompts[0]  # Return the first example as fallback
+    return f"Reflect on how {theme_name.lower()} has impacted your work or life recently. What insights can you draw from this experience?"
 
 
 class SignUpView(CreateView):
