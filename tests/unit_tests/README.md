@@ -21,6 +21,37 @@ tests/unit_tests/
     └── test_custom_authentication_form.py   # Tests for login form
 ```
 
+## Test Logs
+
+All test execution logs are stored in the `test_logs/` directory at the project root:
+
+```
+test_logs/
+├── README.md                          # Documentation for test logs
+├── test_log_20250730_231308.txt      # Example log file
+├── test_log_20250731_082954.txt      # Latest log file
+└── ...                                # Historical logs
+```
+
+### Test Log Features
+- **Automatic Organization**: All logs are automatically saved to `test_logs/` folder
+- **Timestamped Files**: Each log is named with timestamp: `test_log_YYYYMMDD_HHMMSS.txt`
+- **Complete Output**: Logs contain both stdout and stderr from test execution
+- **Performance Tracking**: Includes execution duration and test statistics
+- **Historical Record**: Maintains history of all test runs for debugging
+
+### Managing Test Logs
+```bash
+# List recent test logs
+python list_test_logs.py
+
+# View specific log file
+cat test_logs/test_log_20250731_082954.txt
+
+# Clean up old logs (keep last 30 days)
+find test_logs/ -name "test_log_*.txt" -mtime +30 -delete
+```
+
 ## Custom Functions Tested
 
 ### Views (`views/test_custom_functions.py`)
@@ -101,6 +132,18 @@ tests/unit_tests/
 
 ## Running the Tests
 
+### Using the Comprehensive Test Runner (Recommended)
+```bash
+# Run all tests with detailed logging
+python run_tests_with_log.py
+
+# This will:
+# - Run all 101 unit tests
+# - Save detailed log to test_logs/ folder
+# - Display real-time progress
+# - Show summary with pass/fail counts
+```
+
 ### Using the Test Runner Script
 ```bash
 # Run all unit tests
@@ -165,6 +208,7 @@ Each test file includes proper setup and teardown methods:
 3. **Edge Cases**: Tests cover error conditions and boundary cases
 4. **Descriptive Names**: Test method names clearly describe what is being tested
 5. **Documentation**: Each test includes a docstring explaining its purpose
+6. **Logging**: All test runs are logged for debugging and historical tracking
 
 ## Adding New Tests
 

@@ -9,6 +9,7 @@ import sys
 import json
 import time
 import re
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -19,6 +20,10 @@ def run_tests_with_detailed_logging():
     print("=" * 80)
     print(f"Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 80)
+    
+    # Ensure test_logs directory exists
+    test_logs_dir = Path("test_logs")
+    test_logs_dir.mkdir(exist_ok=True)
     
     # List all test modules to run
     test_modules = [
@@ -55,8 +60,8 @@ def run_tests_with_detailed_logging():
         output_lines = result.stdout.split('\n')
         error_lines = result.stderr.split('\n')
         
-        # Save the complete output to file
-        log_filename = f"test_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        # Save the complete output to file in test_logs directory
+        log_filename = test_logs_dir / f"test_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
         save_complete_log(output_lines, error_lines, log_filename, duration)
         
         # Print summary
