@@ -100,6 +100,7 @@ def answer_prompt_view(request):
         answer = request.POST.get('answer')
         title = request.POST.get('title')
         prompt = request.POST.get('prompt')
+        writing_time = request.POST.get('writing_time', 0)
         
         if not answer or not title:
             messages.error(request, 'Please provide both a title and your response.')
@@ -118,7 +119,8 @@ def answer_prompt_view(request):
                 title=title,
                 prompt=prompt,
                 answer=answer,
-                bookmarked=False  # Add default value for deployed app
+                bookmarked=False,  # Add default value for deployed app
+                writing_time=int(writing_time) if writing_time else 0
             )
             
             messages.success(request, f'Journal entry "{title}" saved successfully!')

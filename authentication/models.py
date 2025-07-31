@@ -131,6 +131,7 @@ class JournalEntry(models.Model):
     answer = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     bookmarked = models.BooleanField(default=False)  # New field for bookmarking
+    writing_time = models.IntegerField(default=0, help_text="Time spent writing in seconds")
 
     class Meta:
         ordering = ['-created_at']

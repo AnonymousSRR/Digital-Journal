@@ -9,6 +9,10 @@
             <span>← Back</span>
         </a>
         <h1 class="answer-prompt-title">Answer Prompt</h1>
+        <div class="writing-timer" id="writing-timer">
+            <span class="timer-label">Writing Time:</span>
+            <span class="timer-display" id="timer-display">00:00</span>
+        </div>
     </div>
     
     <div class="prompt-section">
@@ -24,9 +28,10 @@
             <div class="prompt-text">{{ prompt }}</div>
         </div>
         
-        <form method="post" class="answer-form">
+        <form method="post" class="answer-form" id="journal-form">
             {% csrf_token %}
             <input type="hidden" name="prompt" value="{{ prompt }}" id="prompt-field" data-testid="prompt-field">
+            <input type="hidden" name="writing_time" id="writing-time-field" value="0">
             <div class="form-group">
                 <label for="title" class="form-label">Journal Title</label>
                 <input type="text" id="title" name="title" class="form-control title-input" placeholder="Enter a title for your journal entry..." value="{{ title|default:'' }}" required>
@@ -45,4 +50,99 @@
         </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const timerDisplay = document.getElementById('timer-display');
+    const writingTimeField = document.getElementById('writing-time-field');
+    const journalForm = document.getElementById('journal-form');
+    let startTime = null;
+    let timerInterval = null;
+    
+    // Get the start time from sessionStorage
+    const storedStartTime = sessionStorage.getItem('journalWritingStartTime');
+    if (storedStartTime) {
+        startTime = parseInt(storedStartTime);
+        console.log('Resumed timer from:', new Date(startTime));
+    } else {
+        // If no stored time, start from now
+        startTime = Date.now();
+        sessionStorage.setItem('journalWritingStartTime', startTime.toString());
+        console.log('Started new timer at:', new Date(startTime));
+    }
+    
+    // Update timer display every second
+    function updateTimer() {
+        const currentTime = Date.now();
+        const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
+        const minutes = Math.floor(elapsedSeconds / 60);
+        const seconds = elapsedSeconds % 60;
+        timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    // Start the timer
+    updateTimer();
+    timerInterval = setInterval(updateTimer, 1000);
+    
+    // Handle form submission
+    journalForm.addEventListener('submit', function(e) {
+        // Calculate final writing time
+        const currentTime = Date.now();
+        const totalWritingTime = Math.floor((currentTime - startTime) / 1000);
+        
+        // Set the writing time in the hidden field
+        writingTimeField.value = totalWritingTime;
+        
+        // Clear the timer from sessionStorage
+        sessionStorage.removeItem('journalWritingStartTime');
+        
+        // Stop the timer
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+        
+        console.log('Writing completed. Total time:', totalWritingTime, 'seconds');
+    });
+    
+    // Handle page unload to save timer state
+    window.addEventListener('beforeunload', function() {
+        const currentTime = Date.now();
+        const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
+        sessionStorage.setItem('journalWritingElapsed', elapsedSeconds.toString());
+    });
+});
+</script>
+
+<style>
+.writing-timer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #666;
+    margin-left: auto;
+}
+
+.timer-label {
+    font-weight: 500;
+}
+
+.timer-display {
+    font-family: monospace;
+    font-weight: bold;
+    color: #333;
+    background: #f5f5f5;
+    padding: 4px 8px;
+    border-radius: 4px;
+    min-width: 60px;
+    text-align: center;
+}
+
+.answer-prompt-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+</style>
 {% endblock %} 

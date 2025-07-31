@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load time_filters %}
 
 {% block title %}My Journals - Digital Journal App{% endblock %}
 
@@ -33,6 +34,12 @@
                             <div class="journal-detail">
                                 <span class="detail-label">Theme:</span>
                                 <span class="detail-value">{{ entry.theme.name }}</span>
+                            </div>
+                            <div class="journal-detail">
+                                <span class="detail-label">Writing Time:</span>
+                                <span class="detail-value writing-time">
+                                    {{ entry.writing_time|format_writing_time }}
+                                </span>
                             </div>
                             <div class="journal-detail">
                                 <span class="detail-label">Prompt:</span>
@@ -76,6 +83,12 @@
                             <div class="journal-detail">
                                 <span class="detail-label">Theme:</span>
                                 <span class="detail-value">{{ entry.theme.name }}</span>
+                            </div>
+                            <div class="journal-detail">
+                                <span class="detail-label">Writing Time:</span>
+                                <span class="detail-value writing-time">
+                                    {{ entry.writing_time|format_writing_time }}
+                                </span>
                             </div>
                             <div class="journal-detail">
                                 <span class="detail-label">Prompt:</span>
@@ -145,6 +158,10 @@
                         <span class="modal-detail-value" id="modalTheme"></span>
                     </div>
                     <div class="modal-journal-detail">
+                        <span class="modal-detail-label">Writing Time:</span>
+                        <span class="modal-detail-value writing-time" id="modalWritingTime"></span>
+                    </div>
+                    <div class="modal-journal-detail">
                         <span class="modal-detail-label">Prompt:</span>
                         <span class="modal-detail-value modal-prompt-text" id="modalPrompt"></span>
                     </div>
@@ -181,7 +198,8 @@ journalEntries[{{ entry.id }}] = {
     theme: "{{ entry.theme.name|escapejs }}",
     prompt: "{{ entry.prompt|escapejs }}",
     answer: "{{ entry.answer|escapejs }}",
-    bookmarked: true
+    bookmarked: true,
+    writing_time: {{ entry.writing_time|default:0 }}
 };
 {% endfor %}
 {% for entry in regular_entries %}
@@ -191,9 +209,27 @@ journalEntries[{{ entry.id }}] = {
     theme: "{{ entry.theme.name|escapejs }}",
     prompt: "{{ entry.prompt|escapejs }}",
     answer: "{{ entry.answer|escapejs }}",
-    bookmarked: false
+    bookmarked: false,
+    writing_time: {{ entry.writing_time|default:0 }}
 };
 {% endfor %}
+
+// Helper function to format writing time
+function formatWritingTime(seconds) {
+    if (!seconds || seconds === 0) {
+        return 'N/A';
+    }
+    
+    if (seconds >= 3600) {
+        const hours = (seconds / 3600).toFixed(1);
+        return `${hours}h`;
+    } else if (seconds >= 60) {
+        const minutes = Math.floor(seconds / 60);
+        return `${minutes}m`;
+    } else {
+        return `${seconds}s`;
+    }
+}
 
 function openJournalModal(entryId) {
     const entry = journalEntries[entryId];
@@ -205,6 +241,7 @@ function openJournalModal(entryId) {
     document.getElementById('modalTheme').textContent = entry.theme;
     document.getElementById('modalPrompt').textContent = entry.prompt;
     document.getElementById('modalAnswer').textContent = entry.answer;
+    document.getElementById('modalWritingTime').textContent = formatWritingTime(entry.writing_time);
     
     // Show modal
     document.getElementById('journalModal').style.display = 'flex';

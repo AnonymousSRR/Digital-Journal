@@ -16,4 +16,17 @@
         </a>
     </div>
 </div>
-{% endblock %} x
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const createJournalBtn = document.getElementById('create-journal-btn');
+    
+    createJournalBtn.addEventListener('click', function() {
+        // Start the timer when user clicks Create New Journal
+        const startTime = Date.now();
+        sessionStorage.setItem('journalWritingStartTime', startTime.toString());
+        console.log('Timer started at:', new Date(startTime));
+    });
+});
+</script>
+{% endblock %}

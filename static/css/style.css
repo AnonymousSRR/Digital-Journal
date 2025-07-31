@@ -782,7 +782,6 @@ body {
 /* Other entries section */
 .other-entries-section {
     margin-bottom: 3rem;
-    width: 100%;
 }
 
 .other-entries-title {
@@ -1350,16 +1349,46 @@ body {
     100% { transform: scale(1); }
 } 
 
-/* Other entries section */
-.other-entries-section {
-    margin-bottom: 3rem;
+/* Writing time styles */
+.writing-time {
+    font-weight: 600;
+    color: #3498db;
+    background: rgba(52, 152, 219, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
 }
 
-.other-entries-title {
-    font-size: 1.5rem;
-    color: #2c3e50;
-    font-weight: 600;
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #7f8c8d;
-} 
+.writing-timer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #666;
+    margin-left: auto;
+}
+
+.timer-label {
+    font-weight: 500;
+}
+
+.timer-display {
+    font-family: monospace;
+    font-weight: bold;
+    color: #333;
+    background: #f5f5f5;
+    padding: 4px 8px;
+    border-radius: 4px;
+    min-width: 60px;
+    text-align: center;
+    border: 1px solid #ddd;
+}
+
+.answer-prompt-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+/* Other entries section */ 

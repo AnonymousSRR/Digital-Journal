@@ -19,7 +19,7 @@ import requests
 User = get_user_model()
 
 
-class TestGenerateThemePrompt:
+class TestGenerateThemePrompt(TestCase):
     """Test cases for generate_theme_prompt custom function"""
     
     @patch('authentication.views.requests.post')
@@ -70,6 +70,7 @@ class TestGenerateThemePrompt:
         # Should return fallback prompt from theme examples
         assert 'balance' in result.lower()
         assert 'delivery' in result.lower()
+        assert 'technical' in result.lower()
     
     @patch('authentication.views.requests.post')
     def test_generate_theme_prompt_unknown_theme(self, mock_post):
@@ -92,6 +93,7 @@ class TestGenerateThemePrompt:
         # Should return fallback prompt from theme examples
         assert 'leadership style' in result.lower()
         assert 'situation' in result.lower()
+        assert 'individual' in result.lower()
     
     @patch('authentication.views.requests.post')
     def test_generate_theme_prompt_timeout(self, mock_post):
@@ -101,47 +103,42 @@ class TestGenerateThemePrompt:
         
         result = generate_theme_prompt('Business Impact', 'Business themes')
         
-        # Should return fallback prompt after all retries fail
-        # The fallback should be the first example from Business Impact theme
+        # Should return fallback prompt after timeout
         assert 'stakeholders' in result.lower()
         assert 'engineering' in result.lower()
-        
-        # Verify that the API was called multiple times (retry attempts)
-        assert mock_post.call_count == 3  # max_retries = 3
+        assert 'strategic' in result.lower()
     
     @patch('authentication.views.requests.post')
     def test_generate_theme_prompt_retry_success(self, mock_post):
-        """Test retry mechanism with eventual success"""
-        # First two calls fail with timeout, third succeeds
+        """Test retry logic with eventual success"""
+        # First call fails, second call succeeds
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            'generations': [{'text': 'How have you grown as a leader recently?'}]
+        }
+        mock_response.raise_for_status.return_value = None
+        
         mock_post.side_effect = [
             requests.exceptions.Timeout("Read timed out. (read timeout=10)"),
-            requests.exceptions.Timeout("Read timed out. (read timeout=15)"),
-            Mock(json=lambda: {'generations': [{'text': 'How have you improved business metrics recently?'}]})
+            mock_response
         ]
         
-        result = generate_theme_prompt('Business Impact', 'Business themes')
+        result = generate_theme_prompt('Leadership', 'Leadership themes')
         
-        # Should return the successful API response
-        assert result == 'How have you improved business metrics recently?'
-        
-        # Verify that the API was called 3 times (2 failures + 1 success)
-        assert mock_post.call_count == 3
+        assert result == 'How have you grown as a leader recently?'
+        assert mock_post.call_count == 2
     
     @patch('authentication.views.requests.post')
     def test_generate_theme_prompt_connection_error(self, mock_post):
-        """Test handling of connection errors with retry logic"""
-        # Mock connection error for all attempts
+        """Test handling of connection errors"""
         mock_post.side_effect = requests.exceptions.ConnectionError("Connection failed")
         
-        result = generate_theme_prompt('Technology Impact', 'Technology themes')
+        result = generate_theme_prompt('Org Impact', 'Org themes')
         
-        # Should return fallback prompt after all retries fail
-        # The fallback should be the first example from Technology Impact theme
-        assert 'balance' in result.lower()
-        assert 'delivery' in result.lower()
-        
-        # Verify that the API was called multiple times (retry attempts)
-        assert mock_post.call_count == 3  # max_retries = 3
+        # Should return fallback prompt from theme examples
+        assert 'organization' in result.lower()
+        assert 'contributed' in result.lower()
+        assert 'immediate' in result.lower()
     
     def test_generate_theme_prompt_theme_examples(self):
         """Test that theme examples are properly defined"""

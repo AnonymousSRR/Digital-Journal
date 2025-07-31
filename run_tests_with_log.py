@@ -33,7 +33,8 @@ def run_tests_with_detailed_logging():
         'tests.unit_tests.models.test_custom_user',
         'tests.unit_tests.views.test_authentication_views',
         'tests.unit_tests.forms.test_custom_user_creation_form',
-        'tests.unit_tests.forms.test_custom_authentication_form'
+        'tests.unit_tests.forms.test_custom_authentication_form',
+        'tests.unit_tests.authentication.models.test_time_formatting'
     ]
     
     print("\n📁 Running All Tests...")

@@ -42,6 +42,7 @@ def run_tests_with_pytest(verbose=False, coverage=False):
         'tests/unit_tests/forms/test_custom_authentication_form.py',
         'tests/unit_tests/models/test_custom_user.py',  # Existing tests
         'tests/unit_tests/views/test_authentication_views.py',  # Existing tests
+        'tests/unit_tests/authentication/models/test_time_formatting.py',  # New time formatting tests
     ]
     
     cmd.extend(test_paths)
@@ -92,6 +93,7 @@ def run_tests_with_django(verbose=False):
         'tests.unit_tests.forms.test_custom_authentication_form',
         'tests.unit_tests.models.test_custom_user',
         'tests.unit_tests.views.test_authentication_views',
+        'tests.unit_tests.authentication.models.test_time_formatting',  # New time formatting tests
     ]
     
     cmd.extend(test_paths)
