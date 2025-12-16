@@ -774,3 +774,444 @@ def export_emotion_report_json(request):
     days = int(request.GET.get('days', 90))
     stats = EmotionReportGenerator.generate_summary_stats(request.user, days=days)
     return JsonResponse(stats)
+
+
+# Version History Views
+
+@login_required
+def entry_version_history(request, entry_id):
+    """
+    Display timeline of all versions for a journal entry.
+    Shows version list with metadata and links to view/compare/restore.
+    """
+    entry = get_object_or_404(JournalEntry, id=entry_id, user=request.user)
+    versions = entry.versions.all().order_by('-version_number')
+    
+    context = {
+        'entry': entry,
+        'versions': versions,
+        'page_title': f'Version History - {entry.title}'
+    }
+    return render(request, 'authentication/entry_version_history.html', context)
+
+
+@login_required
+def view_version(request, entry_id, version_number):
+    """
+    Display a specific version of a journal entry.
+    """
+    entry = get_object_or_404(JournalEntry, id=entry_id, user=request.user)
+    version = get_object_or_404(entry.versions, version_number=version_number)
+    
+    # Check if this is the current version
+    is_current = version.is_current()
+    
+    context = {
+        'entry': entry,
+        'version': version,
+        'is_current': is_current,
+        'page_title': f'{entry.title} - Version {version_number}'
+    }
+    return render(request, 'authentication/view_version.html', context)
+
+
+@login_required
+def compare_versions(request, entry_id):
+    """
+    Compare two versions of a journal entry side-by-side.
+    Query params: v1=version_number, v2=version_number
+    """
+    from difflib import unified_diff
+    
+    entry = get_object_or_404(JournalEntry, id=entry_id, user=request.user)
+    
+    v1_num = request.GET.get('v1')
+    v2_num = request.GET.get('v2')
+    
+    if not v1_num or not v2_num:
+        messages.error(request, 'Please select two versions to compare.')
+        return redirect('authentication:entry_version_history', entry_id=entry_id)
+    
+    try:
+        v1 = get_object_or_404(entry.versions, version_number=int(v1_num))
+        v2 = get_object_or_404(entry.versions, version_number=int(v2_num))
+    except (ValueError, Exception):
+        messages.error(request, 'One or both versions not found.')
+        return redirect('authentication:entry_version_history', entry_id=entry_id)
+    
+    # Generate text diff for answer field
+    v1_lines = v1.answer.splitlines(keepends=True)
+    v2_lines = v2.answer.splitlines(keepends=True)
+    diff_lines = list(unified_diff(v1_lines, v2_lines, lineterm=''))
+    
+    # Prepare comparison data
+    comparison = {
+        'v1': v1,
+        'v2': v2,
+        'title_changed': v1.title != v2.title,
+        'prompt_changed': v1.prompt != v2.prompt,
+        'answer_changed': v1.answer != v2.answer,
+        'diff': diff_lines,
+    }
+    
+    context = {
+        'entry': entry,
+        'comparison': comparison,
+        'page_title': f'Compare Versions {v1_num} & {v2_num}'
+    }
+    return render(request, 'authentication/compare_versions.html', context)
+
+
+@login_required
+def api_version_timeline(request, entry_id):
+    """
+    API endpoint: Get JSON timeline of all versions for an entry.
+    Response: [
+        {
+            'version_number': 3,
+            'created_at': '2025-01-15T10:30:00Z',
+            'created_by': 'user@example.com',
+            'change_summary': 'Title updated',
+            'title': 'Entry Title',
+            'is_current': true
+        },
+        ...
+    ]
+    """
+    entry = get_object_or_404(JournalEntry, id=entry_id, user=request.user)
+    versions = entry.versions.all().order_by('-version_number')
+    
+    data = [
+        {
+            'version_number': v.version_number,
+            'created_at': v.created_at.isoformat(),
+            'created_by': v.created_by.email if v.created_by else 'System',
+            'change_summary': v.change_summary,
+            'title': v.title,
+            'is_current': v.is_current()
+        }
+        for v in versions
+    ]
+    
+    return JsonResponse({'versions': data, 'entry_id': entry_id})
+
+
+@login_required
+def api_version_diff(request, entry_id):
+    """
+    API endpoint: Get unified diff between two versions.
+    Query params: v1=version_number, v2=version_number
+    Response: {
+        'v1': {...version_data...},
+        'v2': {...version_data...},
+        'diff': [...diff_lines...],
+        'title_changed': bool,
+        'answer_changed': bool
+    }
+    """
+    from difflib import unified_diff
+    
+    entry = get_object_or_404(JournalEntry, id=entry_id, user=request.user)
+    
+    v1_num = request.GET.get('v1')
+    v2_num = request.GET.get('v2')
+    
+    if not v1_num or not v2_num:
+        return JsonResponse({'error': 'Missing v1 or v2 parameter'}, status=400)
+    
+    try:
+        v1 = get_object_or_404(entry.versions, version_number=int(v1_num))
+        v2 = get_object_or_404(entry.versions, version_number=int(v2_num))
+    except ValueError:
+        return JsonResponse({'error': 'Invalid version number'}, status=400)
+    
+    # Generate diff
+    v1_lines = v1.answer.splitlines(keepends=True)
+    v2_lines = v2.answer.splitlines(keepends=True)
+    diff_lines = list(unified_diff(v1_lines, v2_lines, lineterm=''))
+    
+    data = {
+        'v1': {'version_number': v1.version_number, 'title': v1.title, 'created_at': v1.created_at.isoformat()},
+        'v2': {'version_number': v2.version_number, 'title': v2.title, 'created_at': v2.created_at.isoformat()},
+        'diff': diff_lines,
+        'title_changed': v1.title != v2.title,
+        'answer_changed': v1.answer != v2.answer,
+        'prompt_changed': v1.prompt != v2.prompt
+    }
+    
+    return JsonResponse(data)
+
+
+@login_required
+def restore_version(request, entry_id, version_number):
+    """
+    Restore a journal entry to a previous version.
+    Creates a new version with the content from the specified version.
+    """
+    entry = get_object_or_404(JournalEntry, id=entry_id, user=request.user)
+    source_version = get_object_or_404(entry.versions, version_number=version_number)
+    
+    if request.method == 'POST':
+        try:
+            # Update entry with content from source version
+            entry.title = source_version.title
+            entry.answer = source_version.answer
+            entry.prompt = source_version.prompt
+            entry.theme = source_version.theme
+            entry.visibility = source_version.visibility
+            entry.save()
+            
+            # Update the newly created version to mark it as a restore
+            latest_version = entry.get_current_version()
+            latest_version.edit_source = 'restore'
+            latest_version.restored_from_version = version_number
+            latest_version.change_summary = f'Restored from version {version_number}'
+            latest_version.save()
+            
+            messages.success(
+                request,
+                f'Entry restored to version {version_number} successfully. '
+                f'A new version has been created.'
+            )
+            return redirect('authentication:entry_version_history', entry_id=entry_id)
+        
+        except Exception as e:
+            messages.error(request, f'Error restoring version: {str(e)}')
+            return redirect('authentication:entry_version_history', entry_id=entry_id)
+    
+    # GET request: show confirmation page
+    context = {
+        'entry': entry,
+        'source_version': source_version,
+        'page_title': f'Restore to Version {version_number}?'
+    }
+    return render(request, 'authentication/confirm_restore_version.html', context)
+
+
+@login_required
+def api_restore_version(request, entry_id, version_number):
+    """
+    API endpoint: Restore version (POST request).
+    Response: {'success': true, 'new_version_number': N, 'message': '...'}
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    
+    entry = get_object_or_404(JournalEntry, id=entry_id, user=request.user)
+    source_version = get_object_or_404(entry.versions, version_number=version_number)
+    
+    try:
+        # Restore content
+        entry.title = source_version.title
+        entry.answer = source_version.answer
+        entry.prompt = source_version.prompt
+        entry.theme = source_version.theme
+        entry.visibility = source_version.visibility
+        entry.save()
+        
+        # Mark the new version as restore
+        latest_version = entry.get_current_version()
+        latest_version.edit_source = 'restore'
+        latest_version.restored_from_version = version_number
+        latest_version.change_summary = f'Restored from version {version_number}'
+        latest_version.save()
+        
+        return JsonResponse({
+            'success': True,
+            'new_version_number': latest_version.version_number,
+            'message': f'Version {version_number} restored successfully.'
+        })
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@login_required
+def export_version_pdf(request, entry_id, version_number):
+    """
+    Export a specific version as PDF.
+    """
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+    from io import BytesIO
+    
+    entry = get_object_or_404(JournalEntry, id=entry_id, user=request.user)
+    version = get_object_or_404(entry.versions, version_number=version_number)
+    
+    # Create PDF in memory
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=0.75*inch,
+        leftMargin=0.75*inch,
+        topMargin=0.75*inch,
+        bottomMargin=0.75*inch
+    )
+    
+    styles = getSampleStyleSheet()
+    story = []
+    
+    # Title and metadata
+    story.append(Paragraph(f"<b>{version.title}</b>", styles['Heading1']))
+    story.append(Spacer(1, 0.2*inch))
+    
+    # Version info
+    metadata = f"""
+    <b>Entry ID:</b> {entry.id}<br/>
+    <b>Version:</b> {version.version_number} of {entry.version_count()}<br/>
+    <b>Created:</b> {version.created_at.strftime('%B %d, %Y at %I:%M %p')}<br/>
+    <b>Theme:</b> {version.theme.name if version.theme else 'N/A'}<br/>
+    <b>Visibility:</b> {version.get_visibility_display()}<br/>
+    <b>Edit Source:</b> {version.get_edit_source_display()}
+    """
+    story.append(Paragraph(metadata, styles['Normal']))
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Prompt section
+    if version.prompt:
+        story.append(Paragraph("<b>Prompt:</b>", styles['Heading3']))
+        story.append(Paragraph(version.prompt, styles['Normal']))
+        story.append(Spacer(1, 0.2*inch))
+    
+    # Answer section
+    story.append(Paragraph("<b>Response:</b>", styles['Heading3']))
+    story.append(Paragraph(version.answer, styles['Normal']))
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Footer with export info
+    footer = f"<i>Exported on {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</i>"
+    story.append(Paragraph(footer, styles['Normal']))
+    
+    # Build PDF
+    doc.build(story)
+    buffer.seek(0)
+    
+    # Return as response
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    filename = f"{slugify(version.title)}_v{version.version_number}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+@login_required
+def export_version_comparison_pdf(request, entry_id):
+    """
+    Export a comparison of two versions as PDF.
+    Query params: v1=version_number, v2=version_number
+    """
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.units import inch
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+    from io import BytesIO
+    
+    entry = get_object_or_404(JournalEntry, id=entry_id, user=request.user)
+    
+    v1_num = request.GET.get('v1')
+    v2_num = request.GET.get('v2')
+    
+    if not v1_num or not v2_num:
+        messages.error(request, 'Please specify v1 and v2 query parameters.')
+        return redirect('authentication:entry_version_history', entry_id=entry_id)
+    
+    try:
+        v1 = get_object_or_404(entry.versions, version_number=int(v1_num))
+        v2 = get_object_or_404(entry.versions, version_number=int(v2_num))
+    except ValueError:
+        messages.error(request, 'Invalid version number.')
+        return redirect('authentication:entry_version_history', entry_id=entry_id)
+    
+    # Create PDF
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=0.75*inch,
+        leftMargin=0.75*inch,
+        topMargin=0.75*inch,
+        bottomMargin=0.75*inch
+    )
+    
+    styles = getSampleStyleSheet()
+    story = []
+    
+    # Title
+    story.append(Paragraph(f"<b>Version Comparison: {entry.title}</b>", styles['Heading1']))
+    story.append(Spacer(1, 0.2*inch))
+    
+    # Comparison summary
+    summary = f"""
+    <b>Comparing Version {v1.version_number} vs Version {v2.version_number}</b><br/>
+    <b>Title Changed:</b> {'Yes' if v1.title != v2.title else 'No'}<br/>
+    <b>Content Changed:</b> {'Yes' if v1.answer != v2.answer else 'No'}
+    """
+    story.append(Paragraph(summary, styles['Normal']))
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Version 1 section
+    story.append(Paragraph(f"<b>Version {v1.version_number}</b> ({v1.created_at.strftime('%b %d, %Y')})", styles['Heading3']))
+    story.append(Paragraph(f"Title: {v1.title}", styles['Normal']))
+    story.append(Spacer(1, 0.1*inch))
+    story.append(Paragraph(v1.answer, styles['Normal']))
+    story.append(PageBreak())
+    
+    # Version 2 section
+    story.append(Paragraph(f"<b>Version {v2.version_number}</b> ({v2.created_at.strftime('%b %d, %Y')})", styles['Heading3']))
+    story.append(Paragraph(f"Title: {v2.title}", styles['Normal']))
+    story.append(Spacer(1, 0.1*inch))
+    story.append(Paragraph(v2.answer, styles['Normal']))
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Footer
+    footer = f"<i>Exported on {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</i>"
+    story.append(Paragraph(footer, styles['Normal']))
+    
+    # Build PDF
+    doc.build(story)
+    buffer.seek(0)
+    
+    # Return as response
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    filename = f"{slugify(entry.title)}_v{v1.version_number}_vs_v{v2.version_number}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+@login_required
+def api_export_version_pdf(request, entry_id, version_number):
+    """
+    API endpoint: Export version as PDF (returns file stream).
+    """
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.units import inch
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+    from io import BytesIO
+    
+    entry = get_object_or_404(JournalEntry, id=entry_id, user=request.user)
+    version = get_object_or_404(entry.versions, version_number=version_number)
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    styles = getSampleStyleSheet()
+    story = []
+    
+    story.append(Paragraph(f"<b>{version.title}</b>", styles['Heading1']))
+    story.append(Spacer(1, 0.2*inch))
+    
+    metadata = f"<b>Version {version.version_number}</b> | {version.created_at.strftime('%B %d, %Y')}"
+    story.append(Paragraph(metadata, styles['Normal']))
+    story.append(Spacer(1, 0.2*inch))
+    
+    story.append(Paragraph(version.answer, styles['Normal']))
+    
+    doc.build(story)
+    buffer.seek(0)
+    
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    filename = f"{slugify(version.title)}_v{version.version_number}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response

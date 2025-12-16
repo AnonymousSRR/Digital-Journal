@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ page_title }}</h1>
+    
+    <div class="alert alert-warning">
+        <h4>Are you sure you want to restore this version?</h4>
+        <p>This will create a new version with the content from Version {{ source_version.version_number }}.</p>
+        <p>The current version will be preserved in the history.</p>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Version {{ source_version.version_number }} Preview</h4>
+            <small>{{ source_version.created_at|date:"M d, Y H:i" }}</small>
+        </div>
+        <div class="card-body">
+            <h5>Title:</h5>
+            <p>{{ source_version.title }}</p>
+            
+            <h5>Answer:</h5>
+            <div>{{ source_version.answer|linebreaks }}</div>
+        </div>
+    </div>
+    
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-warning">Restore This Version</button>
+        <a href="{% url 'authentication:entry_version_history' entry.id %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

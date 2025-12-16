@@ -21,6 +21,9 @@ selenium==4.34.2
 # Natural Language Processing
 textblob==0.18.0
 
+# PDF generation
+reportlab==4.0.9
+
 # HTTP and networking
 requests==2.32.4
 certifi==2025.7.14

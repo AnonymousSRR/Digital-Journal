@@ -3,10 +3,11 @@ set -euo pipefail
 
 PLAN_DIR="stories and plans/implementation plans"
 REVIEW_DIR="Plan Reviewer Results"
+CODE_REVIEW_DIR="Code Reviewer Results"
 
 log() { echo "[$(date '+%H:%M:%S')] $1"; }
 
-log "Starting Coder → Plan-Reviewer → Auto-Fix pipeline"
+log "Starting Coder → Plan-Reviewer → Auto-Fix → Code-Reviewer pipeline"
 log "Looking for latest plan in: $PLAN_DIR"
 
 if [[ ! -d "$PLAN_DIR" ]]; then
@@ -23,6 +24,7 @@ fi
 
 REPO_DIR="$(pwd)"
 mkdir -p "$REVIEW_DIR"
+mkdir -p "$CODE_REVIEW_DIR"
 
 log "Latest plan detected: $LATEST_PLAN"
 log "Step 1: Running Coder agent (full tool auto-approval)"
@@ -47,7 +49,6 @@ log "Step 2: Running Plan-Reviewer agent (compare UNCOMMITTED changes vs latest 
 PLAN_BASENAME="$(basename "$LATEST_PLAN")"
 PLAN_STEM="${PLAN_BASENAME%.md}"
 PLAN_STEM="${PLAN_STEM#implementation_plan_}"
-
 REVIEW_FILE="$REVIEW_DIR/plan_review_${PLAN_STEM}.md"
 
 GIT_SNAPSHOT="$(git status --porcelain || true)"
@@ -87,42 +88,37 @@ if [[ ! -f "$REVIEW_FILE" ]]; then
   exit 1
 fi
 
-# Step 3: Auto-fix loop (Coder reads latest plan + latest review report)
 log "Step 3: Checking Overall Match and applying fixes if needed"
 
-# Detect Overall Match (case-insensitive) from the review file
-OVERALL_MATCH="$(grep -iE '^\*\*Overall Match\*\*:\s*(Yes|No)\s*$' "$REVIEW_FILE" \
-  | head -n 1 \
-  | sed -E 's/.*:\s*(Yes|No)\s*$/\1/I' || true)"
-
-# Fallback if formatting differs slightly
-if [[ -z "${OVERALL_MATCH:-}" ]]; then
-  OVERALL_MATCH="$(grep -iE 'Overall Match' "$REVIEW_FILE" \
-    | head -n 1 \
-    | sed -E 's/.*(Yes|No).*/\1/I' || true)"
-fi
+# Extract just Yes/No, tolerant of markdown formatting like "**Overall Match**: No"
+OVERALL_MATCH="$(awk '
+  BEGIN { IGNORECASE=1 }
+  $0 ~ /Overall Match/ {
+    if ($0 ~ /: *Yes/) { print "Yes"; exit }
+    if ($0 ~ /: *No/)  { print "No";  exit }
+  }
+' "$REVIEW_FILE" | head -n 1 || true)"
 
 if [[ -z "${OVERALL_MATCH:-}" ]]; then
   echo "[ERROR] Could not determine Overall Match (Yes/No) from: $REVIEW_FILE"
-  echo "Make sure the review file contains a line like: **Overall Match**: Yes"
+  echo "Expected a line like: **Overall Match**: Yes"
   exit 1
 fi
 
 log "Plan review Overall Match: $OVERALL_MATCH"
 
-if [[ "${OVERALL_MATCH,,}" == "yes" ]]; then
+OVERALL_MATCH_LC="$(printf "%s" "$OVERALL_MATCH" | tr '[:upper:]' '[:lower:]')"
+
+if [[ "$OVERALL_MATCH_LC" = "yes" ]]; then
   log "Overall Match is Yes — no auto-fix required."
-  log "Pipeline complete."
-  exit 0
-fi
+else
+  log "Overall Match is No — running Coder agent to apply fixes from review report"
 
-log "Overall Match is No — running Coder agent to apply fixes from review report"
-
-copilot --agent=Coder \
-  --allow-all-tools \
-  --allow-all-paths \
-  --add-dir "$REPO_DIR" \
-  --prompt "You are the Coder agent.
+  copilot --agent=Coder \
+    --allow-all-tools \
+    --allow-all-paths \
+    --add-dir "$REPO_DIR" \
+    --prompt "You are the Coder agent.
 
 GOAL:
 Bring the codebase into full alignment with the implementation plan by applying ONLY the fixes called out in the Plan Review Report.
@@ -133,7 +129,6 @@ RULES:
 - Implement the missing parts, update code, update tests, and rerun relevant tests.
 - Do not add scope beyond what the plan requires.
 - Do not claim tests passed unless you executed them.
-- After applying fixes, ensure the working tree reflects those updates.
 
 LATEST IMPLEMENTATION PLAN (FILE: $LATEST_PLAN):
 $(cat "$LATEST_PLAN")
@@ -141,5 +136,46 @@ $(cat "$LATEST_PLAN")
 LATEST PLAN REVIEW REPORT (FILE: $REVIEW_FILE):
 $(cat "$REVIEW_FILE")"
 
-log "Auto-fix Coder run finished"
-log "Pipeline complete (Coder → Plan-Reviewer → Auto-Fix)"
+  log "Auto-fix Coder run finished"
+fi
+
+log "Step 4: Running Code-Reviewer agent (uncommitted changes → markdown report)"
+
+TS="$(date '+%Y-%m-%d_%H%M%S')"
+CODE_REVIEW_FILE="$CODE_REVIEW_DIR/code_review_${TS}.md"
+CODE_GIT_SNAPSHOT="$(git status --porcelain || true)"
+
+copilot --agent="Code-Reviewer" \
+  --allow-all-tools \
+  --allow-all-paths \
+  --add-dir "$REPO_DIR" \
+  --prompt "You are the Code-Reviewer agent.
+
+TASK:
+1) Review ONLY the current UNCOMMITTED changes (modified + untracked).
+2) Restrict analysis to only changed files and changed lines (use git diff / git status).
+3) Produce a SINGLE markdown report file at:
+   $CODE_REVIEW_FILE
+4) The report MUST include: **Overall Match**: Yes/No
+   - If any Critical or High issue exists → Overall Match: No
+   - Else → Overall Match: Yes
+
+INPUTS:
+- Git Status Snapshot (git status --porcelain):
+$CODE_GIT_SNAPSHOT
+
+NOTES:
+- Do NOT ask questions.
+- Do NOT propose autofix steps beyond brief suggested fixes per issue.
+- Do NOT refactor code in this run.
+- You MUST create the file at the exact path above."
+
+log "Code-Reviewer finished"
+log "Code review report expected at: $CODE_REVIEW_FILE"
+
+if [[ ! -f "$CODE_REVIEW_FILE" ]]; then
+  echo "[ERROR] Code review report was not created: $CODE_REVIEW_FILE"
+  exit 1
+fi
+
+log "Pipeline complete (Coder → Plan-Reviewer → Auto-Fix → Code-Reviewer)"

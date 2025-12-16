@@ -152,6 +152,8 @@ class ExampleService:
 7. **Phase-based organization** - Break work into logical, sequential phases and also for each phase write test cases.
 8. **Checkbox format** - All todos use `- [ ]` markdown checkbox syntax
 9. **Match project patterns** - Follow the coding patterns you observe in the codebase
+10. “Create the markdown file, and in chat output ONLY:
+✓ Implementation plan created: <path>”
 
 ## EXAMPLE INTERACTION
 

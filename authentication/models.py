@@ -157,6 +157,7 @@ class JournalEntry(models.Model):
     prompt = models.TextField()  # dynamically generated prompt
     answer = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    last_modified_at = models.DateTimeField(auto_now=True)
     bookmarked = models.BooleanField(default=False)  # New field for bookmarking
     writing_time = models.IntegerField(default=0, help_text="Time spent writing in seconds")
     
@@ -210,3 +211,81 @@ class JournalEntry(models.Model):
     def is_shared(self):
         """Check if this entry is shared."""
         return self.visibility == 'shared'
+    
+    def get_current_version(self):
+        """Get the latest version of this entry."""
+        return self.versions.latest('version_number')
+    
+    def get_version(self, version_number):
+        """Get a specific version by number."""
+        return self.versions.get(version_number=version_number)
+    
+    def version_count(self):
+        """Get total number of versions."""
+        return self.versions.count()
+
+
+class JournalEntryVersion(models.Model):
+    """
+    Stores version snapshots of journal entries for history tracking.
+    Each edit creates a new version record with full content snapshot.
+    """
+    entry = models.ForeignKey(JournalEntry, on_delete=models.CASCADE, related_name='versions')
+    version_number = models.IntegerField()
+    
+    # Snapshot of entry content at this version
+    title = models.CharField(max_length=200)
+    answer = models.TextField()
+    theme = models.ForeignKey(Theme, on_delete=models.SET_NULL, null=True)
+    prompt = models.TextField()
+    visibility = models.CharField(
+        max_length=10,
+        choices=[('private', 'Private'), ('shared', 'Shared')],
+        default='private'
+    )
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='created_versions')
+    
+    # Change tracking
+    change_summary = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Human-readable description of what changed (e.g., 'Title and answer updated')"
+    )
+    
+    # Track what triggered this version
+    edit_source = models.CharField(
+        max_length=20,
+        choices=[
+            ('initial', 'Initial Creation'),
+            ('edit', 'Manual Edit'),
+            ('restore', 'Restored from Version'),
+        ],
+        default='initial'
+    )
+    restored_from_version = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="If edit_source='restore', the version number that was restored"
+    )
+    
+    class Meta:
+        ordering = ['-version_number']
+        unique_together = ('entry', 'version_number')
+        indexes = [
+            models.Index(fields=['entry', '-version_number']),
+            models.Index(fields=['created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.entry.title} - v{self.version_number}"
+    
+    def is_original(self):
+        """Check if this is the original version (v1)."""
+        return self.version_number == 1
+    
+    def is_current(self):
+        """Check if this is the current/latest version."""
+        return self.version_number == self.entry.versions.latest('version_number').version_number
