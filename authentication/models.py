@@ -289,3 +289,49 @@ class JournalEntryVersion(models.Model):
     def is_current(self):
         """Check if this is the current/latest version."""
         return self.version_number == self.entry.versions.latest('version_number').version_number
+
+
+class Reminder(models.Model):
+    """
+    Reminder model for journal entries supporting one-time and recurring reminders.
+    """
+    ONE_TIME = 'one_time'
+    RECURRING = 'recurring'
+    FREQUENCY_CHOICES = [
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+        ('monthly', 'Monthly'),
+    ]
+    TYPE_CHOICES = [
+        (ONE_TIME, 'One-time'),
+        (RECURRING, 'Recurring'),
+    ]
+
+    journal_entry = models.ForeignKey('JournalEntry', on_delete=models.CASCADE, related_name='reminders')
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default=ONE_TIME)
+    timezone = models.CharField(max_length=50, default='UTC')
+
+    # One-time
+    run_at = models.DateTimeField(null=True, blank=True)
+
+    # Recurring
+    frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES, null=True, blank=True)
+    day_of_week = models.IntegerField(null=True, blank=True)  # 0-6 Monday-Sunday
+    day_of_month = models.IntegerField(null=True, blank=True)  # 1-31
+    time_of_day = models.TimeField(null=True, blank=True)
+
+    # State
+    next_run_at = models.DateTimeField(null=True, blank=True)
+    last_sent_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['is_active', 'next_run_at']),
+        ]
+
+    def __str__(self):
+        return f"Reminder<{self.id}> for entry {self.journal_entry_id}"

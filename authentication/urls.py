@@ -27,4 +27,12 @@ urlpatterns = [
     path('api/entry/<int:entry_id>/diff/', views.api_version_diff, name='api_version_diff'),
     path('api/entry/<int:entry_id>/version/<int:version_number>/restore/', views.api_restore_version, name='api_restore_version'),
     path('api/entry/<int:entry_id>/version/<int:version_number>/export-pdf/', views.api_export_version_pdf, name='api_export_version_pdf'),
+    
+    # Reminder URLs
+    path('api/reminders/', views.api_list_reminders, name='api_list_reminders'),
+    path('api/reminders/create/', views.api_create_reminder, name='api_create_reminder'),
+    path('api/reminders/<int:reminder_id>/', views.api_get_reminder, name='api_get_reminder'),
+    path('api/reminders/<int:reminder_id>/update/', views.api_update_reminder, name='api_update_reminder'),
+    path('api/reminders/<int:reminder_id>/delete/', views.api_delete_reminder, name='api_delete_reminder'),
+    path('api/reminders/upcoming/', views.api_upcoming_reminders, name='api_upcoming_reminders'),
 ] 

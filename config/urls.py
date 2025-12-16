@@ -52,6 +52,13 @@ urlpatterns = [
     # Emotion export endpoints
     path('api/emotion-export/csv/', views.export_emotion_report_csv, name='export_emotion_csv'),
     path('api/emotion-export/json/', views.export_emotion_report_json, name='export_emotion_json'),
+    # Reminder API endpoints
+    path('home/api/reminders/', views.api_list_reminders, name='api_list_reminders'),
+    path('home/api/reminders/upcoming/', views.api_upcoming_reminders, name='api_upcoming_reminders'),
+    path('home/api/reminders/<int:reminder_id>/', views.api_get_reminder, name='api_get_reminder'),
+    path('home/api/reminders/<int:reminder_id>/update/', views.api_update_reminder, name='api_update_reminder'),
+    path('home/api/reminders/<int:reminder_id>/delete/', views.api_delete_reminder, name='api_delete_reminder'),
+    path('home/api/reminders/create/', views.api_create_reminder, name='api_create_reminder'),
     path('login/', include('authentication.urls')),
 ]
 

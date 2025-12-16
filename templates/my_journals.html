@@ -8,6 +8,73 @@
 {% csrf_token %}
 <link rel="stylesheet" href="{% static 'css/emotion_styles.css' %}">
 <link rel="stylesheet" href="{% static 'css/visibility_styles.css' %}">
+<style>
+.upcoming-reminders-section {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.reminders-title {
+    margin: 0 0 1rem 0;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.reminders-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.reminder-card {
+    background: white;
+    padding: 1rem;
+    border-radius: 6px;
+    border-left: 4px solid #007bff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.reminder-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.reminder-type {
+    font-weight: 600;
+    color: #007bff;
+    font-size: 0.9rem;
+}
+
+.reminder-date {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.reminder-entry a {
+    color: #333;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.reminder-entry a:hover {
+    color: #007bff;
+    text-decoration: underline;
+}
+
+.loading-message, .no-reminders, .error-message {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+    font-style: italic;
+}
+
+.error-message {
+    color: #dc3545;
+}
+</style>
 <div class="my-journals-container">
     <div class="my-journals-header">
         <a href="{% url 'home' %}" class="back-button">
@@ -50,6 +117,14 @@
                     </a>
                 {% endfor %}
             </div>
+        </div>
+    </div>
+    
+    <!-- Upcoming Reminders Section -->
+    <div class="upcoming-reminders-section">
+        <h2 class="reminders-title">⏰ Upcoming Reminders</h2>
+        <div id="reminders-list" class="reminders-list">
+            <div class="loading-message">Loading reminders...</div>
         </div>
     </div>
     
@@ -293,7 +368,71 @@ document.addEventListener('DOMContentLoaded', function() {
             this.form.submit();
         }, 500);
     });
+    
+    // Load upcoming reminders
+    loadUpcomingReminders();
 });
+
+function loadUpcomingReminders() {
+    const remindersList = document.getElementById('reminders-list');
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch('/home/api/reminders/upcoming/', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrftoken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.reminders && data.reminders.length > 0) {
+            renderReminders(data.reminders.slice(0, 10)); // Show next 10
+        } else {
+            remindersList.innerHTML = '<div class="no-reminders">No upcoming reminders</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading reminders:', error);
+        remindersList.innerHTML = '<div class="error-message">Failed to load reminders</div>';
+    });
+}
+
+function renderReminders(reminders) {
+    const remindersList = document.getElementById('reminders-list');
+    let html = '';
+    
+    reminders.forEach(reminder => {
+        const nextRun = new Date(reminder.next_run_at);
+        const formattedDate = nextRun.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+        
+        const typeLabel = reminder.type === 'one_time' ? '🔔 One-time' : '🔁 Recurring';
+        const frequencyLabel = reminder.frequency ? ` (${reminder.frequency})` : '';
+        
+        html += `
+            <div class="reminder-card">
+                <div class="reminder-header">
+                    <span class="reminder-type">${typeLabel}${frequencyLabel}</span>
+                    <span class="reminder-date">${formattedDate}</span>
+                </div>
+                <div class="reminder-entry">
+                    <a href="#" onclick="openJournalModal(${reminder.journal_entry_id}); return false;">
+                        ${reminder.entry_title || 'View Entry'}
+                    </a>
+                </div>
+            </div>
+        `;
+    });
+    
+    remindersList.innerHTML = html;
+}
 
 // Journal entry data
 const journalEntries = {};

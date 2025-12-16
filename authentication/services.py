@@ -1,8 +1,11 @@
 """
-Service module for emotion analysis of journal entries.
+Service module for emotion analysis of journal entries and reminder scheduling.
 """
 import re
-from typing import Dict
+from datetime import datetime, timedelta, time as dt_time
+from zoneinfo import ZoneInfo
+from typing import Dict, Optional
+from django.utils import timezone
 
 
 class EmotionAnalysisService:
@@ -126,3 +129,94 @@ class EmotionAnalysisService:
         
         # Return emotion with highest score
         return max(emotion_scores, key=emotion_scores.get)
+
+
+class ReminderScheduler:
+    """Service for computing next run times for reminders."""
+    
+    def compute_next_run(self, reminder, now: Optional[datetime] = None) -> Optional[datetime]:
+        """
+        Compute the next run time for a reminder.
+        
+        Args:
+            reminder: Reminder instance
+            now: Current datetime (defaults to timezone.now())
+            
+        Returns:
+            Next run datetime or None if no future runs
+        """
+        from authentication.models import Reminder
+        
+        tz = ZoneInfo(reminder.timezone or 'UTC')
+        now = (now or timezone.now()).astimezone(tz)
+        
+        if reminder.type == Reminder.ONE_TIME:
+            if reminder.run_at:
+                run = reminder.run_at.astimezone(tz)
+                return run if run > now else None
+            return None
+        
+        # Recurring
+        tod = reminder.time_of_day or dt_time(9, 0)
+        base = now.replace(hour=tod.hour, minute=tod.minute, second=0, microsecond=0)
+        
+        if reminder.frequency == 'daily':
+            candidate = base
+            if candidate <= now:
+                candidate = candidate + timedelta(days=1)
+            return candidate
+        
+        if reminder.frequency == 'weekly':
+            target_dow = reminder.day_of_week if reminder.day_of_week is not None else 0
+            days_ahead = (target_dow - now.weekday()) % 7
+            candidate = base + timedelta(days=days_ahead)
+            if candidate <= now:
+                candidate = candidate + timedelta(days=7)
+            return candidate
+        
+        if reminder.frequency == 'monthly':
+            dom = reminder.day_of_month or 1
+            month = now.month
+            year = now.year
+            # Try to set to this month's dom
+            try:
+                candidate = now.replace(day=dom, hour=tod.hour, minute=tod.minute, second=0, microsecond=0)
+            except ValueError:
+                # Invalid dom (e.g., Feb 30) - move to next month's first day
+                month += 1
+                if month > 12:
+                    month = 1
+                    year += 1
+                candidate = now.replace(year=year, month=month, day=1, hour=tod.hour, minute=tod.minute, second=0, microsecond=0)
+            
+            if candidate <= now:
+                # Move to next month
+                month = candidate.month + 1
+                year = candidate.year
+                if month > 12:
+                    month = 1
+                    year += 1
+                try:
+                    candidate = candidate.replace(year=year, month=month, day=dom)
+                except ValueError:
+                    # Invalid dom in next month - use first day
+                    candidate = candidate.replace(year=year, month=month, day=1)
+            
+            return candidate
+        
+        return None
+
+
+def send_reminder(reminder):
+    """
+    Send a reminder notification.
+    
+    Args:
+        reminder: Reminder instance
+        
+    This is a placeholder function that will integrate with
+    actual notification/email service.
+    """
+    # Placeholder implementation
+    # TODO: Integrate with email/notification service
+    pass

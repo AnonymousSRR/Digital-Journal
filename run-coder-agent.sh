@@ -7,9 +7,12 @@ CODE_REVIEW_DIR="Code Reviewer Results"
 
 log() { echo "[$(date '+%H:%M:%S')] $1"; }
 
-log "Starting Coder → Plan-Reviewer → Auto-Fix → Code-Reviewer pipeline"
+log "Starting Coder → Plan-Reviewer → Auto-Fix → Code-Reviewer → Code-Fix pipeline"
 log "Looking for latest plan in: $PLAN_DIR"
 
+# ----------------------------
+# STEP 0: Sanity checks
+# ----------------------------
 if [[ ! -d "$PLAN_DIR" ]]; then
   echo "[ERROR] Plan directory not found: $PLAN_DIR"
   exit 1
@@ -18,16 +21,18 @@ fi
 LATEST_PLAN="$(ls -t "$PLAN_DIR"/implementation_plan_*.md 2>/dev/null | head -n 1 || true)"
 if [[ -z "${LATEST_PLAN:-}" ]]; then
   echo "[ERROR] No implementation plan found in: $PLAN_DIR"
-  echo "Expected files like: $PLAN_DIR/implementation_plan_<feature>.md"
   exit 1
 fi
 
 REPO_DIR="$(pwd)"
-mkdir -p "$REVIEW_DIR"
-mkdir -p "$CODE_REVIEW_DIR"
+mkdir -p "$REVIEW_DIR" "$CODE_REVIEW_DIR"
 
 log "Latest plan detected: $LATEST_PLAN"
-log "Step 1: Running Coder agent (full tool auto-approval)"
+
+# ----------------------------
+# STEP 1: CODER (initial implementation)
+# ----------------------------
+log "Step 1: Running Coder agent (initial implementation)"
 
 copilot --agent=Coder \
   --allow-all-tools \
@@ -35,23 +40,25 @@ copilot --agent=Coder \
   --add-dir "$REPO_DIR" \
   --prompt "Using the implementation plan below, implement the solution fully.
 Add code and tests as required.
-Run the tests as specified in the plan (and/or repo test scripts).
-If you need dependencies, install them using the project's standard approach (pip / requirements.txt).
+Run the tests as specified in the plan.
 Do not claim tests passed unless you executed them.
 
 Implementation Plan (FILE: $LATEST_PLAN):
 $(cat "$LATEST_PLAN")"
 
-log "Coder finished"
+log "Coder finished initial implementation"
 
-log "Step 2: Running Plan-Reviewer agent (compare UNCOMMITTED changes vs latest plan)"
+# ----------------------------
+# STEP 2: PLAN REVIEWER
+# ----------------------------
+log "Step 2: Running Plan-Reviewer agent"
 
 PLAN_BASENAME="$(basename "$LATEST_PLAN")"
 PLAN_STEM="${PLAN_BASENAME%.md}"
 PLAN_STEM="${PLAN_STEM#implementation_plan_}"
-REVIEW_FILE="$REVIEW_DIR/plan_review_${PLAN_STEM}.md"
+PLAN_REVIEW_FILE="$REVIEW_DIR/plan_review_${PLAN_STEM}.md"
 
-GIT_SNAPSHOT="$(git status --porcelain || true)"
+PLAN_GIT_SNAPSHOT="$(git status --porcelain || true)"
 
 copilot --agent="Plan-Reviewer" \
   --allow-all-tools \
@@ -60,59 +67,38 @@ copilot --agent="Plan-Reviewer" \
   --prompt "You are the Plan-Reviewer agent.
 
 TASK:
-1) Use the latest implementation plan at: $LATEST_PLAN
-2) Review ONLY the current UNCOMMITTED changes in this repo (working tree).
-3) Produce a markdown review report with:
-   - Overall Match: Yes/No
-   - If Yes: only output Overall Match section and stop
-   - If No: include concise phase-by-phase gaps and actionable fixes
-4) You MUST create the report file at:
-   $REVIEW_FILE
+1) Use the implementation plan at: $LATEST_PLAN
+2) Review ONLY the current UNCOMMITTED changes.
+3) Create a markdown report at:
+   $PLAN_REVIEW_FILE
+4) Output Overall Match: Yes/No
 
-IMPORTANT:
-- Treat the plan as the single source of truth.
-- Use git to determine uncommitted changes (git status/diff).
-- Put the git status snapshot below into the report under Inputs.
+GIT STATUS SNAPSHOT:
+$PLAN_GIT_SNAPSHOT
 
-GIT STATUS SNAPSHOT (git status --porcelain):
-$GIT_SNAPSHOT
-
-Implementation Plan Content:
+IMPLEMENTATION PLAN:
 $(cat "$LATEST_PLAN")"
 
-log "Plan-Reviewer finished"
-log "Review report expected at: $REVIEW_FILE"
-
-if [[ ! -f "$REVIEW_FILE" ]]; then
-  echo "[ERROR] Plan review report was not created: $REVIEW_FILE"
+if [[ ! -f "$PLAN_REVIEW_FILE" ]]; then
+  echo "[ERROR] Plan review report not created: $PLAN_REVIEW_FILE"
   exit 1
 fi
 
-log "Step 3: Checking Overall Match and applying fixes if needed"
+log "Plan review completed"
 
-# Extract just Yes/No, tolerant of markdown formatting like "**Overall Match**: No"
-OVERALL_MATCH="$(awk '
+# ----------------------------
+# STEP 3: AUTO-FIX BASED ON PLAN REVIEW
+# ----------------------------
+PLAN_MATCH="$(awk '
   BEGIN { IGNORECASE=1 }
-  $0 ~ /Overall Match/ {
-    if ($0 ~ /: *Yes/) { print "Yes"; exit }
-    if ($0 ~ /: *No/)  { print "No";  exit }
+  /Overall Match/ {
+    if ($0 ~ /Yes/) { print "yes"; exit }
+    if ($0 ~ /No/)  { print "no";  exit }
   }
-' "$REVIEW_FILE" | head -n 1 || true)"
+' "$PLAN_REVIEW_FILE" || true)"
 
-if [[ -z "${OVERALL_MATCH:-}" ]]; then
-  echo "[ERROR] Could not determine Overall Match (Yes/No) from: $REVIEW_FILE"
-  echo "Expected a line like: **Overall Match**: Yes"
-  exit 1
-fi
-
-log "Plan review Overall Match: $OVERALL_MATCH"
-
-OVERALL_MATCH_LC="$(printf "%s" "$OVERALL_MATCH" | tr '[:upper:]' '[:lower:]')"
-
-if [[ "$OVERALL_MATCH_LC" = "yes" ]]; then
-  log "Overall Match is Yes — no auto-fix required."
-else
-  log "Overall Match is No — running Coder agent to apply fixes from review report"
+if [[ "$PLAN_MATCH" = "no" ]]; then
+  log "Plan review failed — applying fixes via Coder"
 
   copilot --agent=Coder \
     --allow-all-tools \
@@ -121,25 +107,24 @@ else
     --prompt "You are the Coder agent.
 
 GOAL:
-Bring the codebase into full alignment with the implementation plan by applying ONLY the fixes called out in the Plan Review Report.
+Fix ONLY the gaps mentioned in the Plan Review Report.
+Do not add scope beyond the implementation plan.
 
-RULES:
-- Use the implementation plan as the single source of truth.
-- Use the Plan Review Report to identify missing/mismatched items and fix them.
-- Implement the missing parts, update code, update tests, and rerun relevant tests.
-- Do not add scope beyond what the plan requires.
-- Do not claim tests passed unless you executed them.
-
-LATEST IMPLEMENTATION PLAN (FILE: $LATEST_PLAN):
+IMPLEMENTATION PLAN:
 $(cat "$LATEST_PLAN")
 
-LATEST PLAN REVIEW REPORT (FILE: $REVIEW_FILE):
-$(cat "$REVIEW_FILE")"
+PLAN REVIEW REPORT:
+$(cat "$PLAN_REVIEW_FILE")"
 
-  log "Auto-fix Coder run finished"
+  log "Auto-fix based on plan review finished"
+else
+  log "Plan review passed — no plan-level fixes required"
 fi
 
-log "Step 4: Running Code-Reviewer agent (uncommitted changes → markdown report)"
+# ----------------------------
+# STEP 4: CODE REVIEWER
+# ----------------------------
+log "Step 4: Running Code-Reviewer agent"
 
 TS="$(date '+%Y-%m-%d_%H%M%S')"
 CODE_REVIEW_FILE="$CODE_REVIEW_DIR/code_review_${TS}.md"
@@ -152,30 +137,55 @@ copilot --agent="Code-Reviewer" \
   --prompt "You are the Code-Reviewer agent.
 
 TASK:
-1) Review ONLY the current UNCOMMITTED changes (modified + untracked).
-2) Restrict analysis to only changed files and changed lines (use git diff / git status).
-3) Produce a SINGLE markdown report file at:
+1) Review ONLY current UNCOMMITTED changes.
+2) Restrict analysis to changed files and lines.
+3) Create a markdown report at:
    $CODE_REVIEW_FILE
-4) The report MUST include: **Overall Match**: Yes/No
-   - If any Critical or High issue exists → Overall Match: No
-   - Else → Overall Match: Yes
+4) Include Overall Match: Yes/No
 
-INPUTS:
-- Git Status Snapshot (git status --porcelain):
-$CODE_GIT_SNAPSHOT
-
-NOTES:
-- Do NOT ask questions.
-- Do NOT propose autofix steps beyond brief suggested fixes per issue.
-- Do NOT refactor code in this run.
-- You MUST create the file at the exact path above."
-
-log "Code-Reviewer finished"
-log "Code review report expected at: $CODE_REVIEW_FILE"
+GIT STATUS SNAPSHOT:
+$CODE_GIT_SNAPSHOT"
 
 if [[ ! -f "$CODE_REVIEW_FILE" ]]; then
-  echo "[ERROR] Code review report was not created: $CODE_REVIEW_FILE"
+  echo "[ERROR] Code review report not created: $CODE_REVIEW_FILE"
   exit 1
 fi
 
-log "Pipeline complete (Coder → Plan-Reviewer → Auto-Fix → Code-Reviewer)"
+log "Code review completed"
+
+# ----------------------------
+# STEP 5: AUTO-FIX BASED ON CODE REVIEW
+# ----------------------------
+log "Step 5: Evaluating Code Review result"
+
+CODE_MATCH="$(awk '
+  BEGIN { IGNORECASE=1 }
+  /Overall Match/ {
+    if ($0 ~ /Yes/) { print "yes"; exit }
+    if ($0 ~ /No/)  { print "no";  exit }
+  }
+' "$CODE_REVIEW_FILE" || true)"
+
+if [[ "$CODE_MATCH" = "no" ]]; then
+  log "Code review failed — applying fixes via Coder"
+
+  copilot --agent=Coder \
+    --allow-all-tools \
+    --allow-all-paths \
+    --add-dir "$REPO_DIR" \
+    --prompt "You are the Coder agent.
+
+GOAL:
+Fix ONLY the issues identified in the Code Review Report.
+Do not refactor unrelated code.
+Do not add new features.
+
+CODE REVIEW REPORT:
+$(cat "$CODE_REVIEW_FILE")"
+
+  log "Auto-fix based on code review finished"
+else
+  log "Code review passed — no code-level fixes required"
+fi
+
+log "Pipeline complete: Coder → Plan-Reviewer → Auto-Fix → Code-Reviewer → Code-Fix"

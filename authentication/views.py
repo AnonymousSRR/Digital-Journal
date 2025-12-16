@@ -1215,3 +1215,174 @@ def api_export_version_pdf(request, entry_id, version_number):
     filename = f"{slugify(version.title)}_v{version.version_number}.pdf"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+
+
+# Reminder views
+@login_required
+def api_list_reminders(request):
+    """API endpoint to list all reminders for the current user."""
+    from .models import Reminder
+    from .serializers import serialize_reminder
+    
+    reminders = Reminder.objects.filter(
+        journal_entry__user=request.user
+    ).select_related('journal_entry').order_by('next_run_at')
+    
+    return JsonResponse({
+        'reminders': [serialize_reminder(r) for r in reminders]
+    })
+
+
+@login_required
+def api_get_reminder(request, reminder_id):
+    """API endpoint to get a single reminder."""
+    from .models import Reminder
+    from .serializers import serialize_reminder
+    
+    reminder = get_object_or_404(
+        Reminder,
+        id=reminder_id,
+        journal_entry__user=request.user
+    )
+    
+    return JsonResponse(serialize_reminder(reminder))
+
+
+@login_required
+def api_create_reminder(request):
+    """API endpoint to create a reminder."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    
+    from .models import Reminder
+    from .serializers import serialize_reminder
+    from .services import ReminderScheduler
+    from datetime import time as dt_time
+    
+    try:
+        data = json.loads(request.body)
+        entry_id = data.get('journal_entry_id')
+        
+        # Verify user owns the entry
+        entry = get_object_or_404(JournalEntry, id=entry_id, user=request.user)
+        
+        reminder = Reminder(journal_entry=entry)
+        reminder.type = data.get('type', Reminder.ONE_TIME)
+        reminder.timezone = data.get('timezone', 'UTC')
+        
+        if reminder.type == Reminder.ONE_TIME:
+            run_at_str = data.get('run_at')
+            if run_at_str:
+                reminder.run_at = datetime.fromisoformat(run_at_str.replace('Z', '+00:00'))
+        else:
+            reminder.frequency = data.get('frequency')
+            reminder.day_of_week = data.get('day_of_week')
+            reminder.day_of_month = data.get('day_of_month')
+            
+            time_str = data.get('time_of_day')
+            if time_str:
+                reminder.time_of_day = dt_time.fromisoformat(time_str)
+        
+        # Compute next_run_at
+        scheduler = ReminderScheduler()
+        reminder.next_run_at = scheduler.compute_next_run(reminder)
+        
+        reminder.save()
+        
+        return JsonResponse(serialize_reminder(reminder), status=201)
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@login_required
+def api_update_reminder(request, reminder_id):
+    """API endpoint to update a reminder."""
+    if request.method not in ['PUT', 'PATCH']:
+        return JsonResponse({'error': 'PUT or PATCH required'}, status=405)
+    
+    from .models import Reminder
+    from .serializers import serialize_reminder
+    from .services import ReminderScheduler
+    from datetime import time as dt_time
+    
+    reminder = get_object_or_404(
+        Reminder,
+        id=reminder_id,
+        journal_entry__user=request.user
+    )
+    
+    try:
+        data = json.loads(request.body)
+        
+        if 'type' in data:
+            reminder.type = data['type']
+        if 'timezone' in data:
+            reminder.timezone = data['timezone']
+        if 'is_active' in data:
+            reminder.is_active = data['is_active']
+        
+        if reminder.type == Reminder.ONE_TIME:
+            if 'run_at' in data:
+                reminder.run_at = datetime.fromisoformat(data['run_at'].replace('Z', '+00:00'))
+        else:
+            if 'frequency' in data:
+                reminder.frequency = data['frequency']
+            if 'day_of_week' in data:
+                reminder.day_of_week = data['day_of_week']
+            if 'day_of_month' in data:
+                reminder.day_of_month = data['day_of_month']
+            if 'time_of_day' in data:
+                reminder.time_of_day = dt_time.fromisoformat(data['time_of_day'])
+        
+        # Recompute next_run_at
+        scheduler = ReminderScheduler()
+        reminder.next_run_at = scheduler.compute_next_run(reminder)
+        
+        reminder.save()
+        
+        return JsonResponse(serialize_reminder(reminder))
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@login_required
+def api_delete_reminder(request, reminder_id):
+    """API endpoint to delete a reminder."""
+    if request.method != 'DELETE':
+        return JsonResponse({'error': 'DELETE required'}, status=405)
+    
+    from .models import Reminder
+    
+    reminder = get_object_or_404(
+        Reminder,
+        id=reminder_id,
+        journal_entry__user=request.user
+    )
+    
+    reminder.delete()
+    
+    return JsonResponse({'success': True})
+
+
+@login_required
+def api_upcoming_reminders(request):
+    """API endpoint to get upcoming reminders for the current user."""
+    from .models import Reminder
+    from .serializers import serialize_reminder
+    from django.utils import timezone
+    
+    limit = int(request.GET.get('limit', 10))
+    
+    reminders = Reminder.objects.filter(
+        journal_entry__user=request.user,
+        is_active=True,
+        next_run_at__isnull=False,
+        next_run_at__gt=timezone.now()
+    ).select_related('journal_entry').order_by('next_run_at')[:limit]
+    
+    return JsonResponse({
+        'success': True,
+        'reminders': [serialize_reminder(r) for r in reminders]
+    })
