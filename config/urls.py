@@ -42,6 +42,15 @@ urlpatterns = [
     path('home/my-journals/', views.my_journals_view, name='my_journals'),
     path('home/delete-journal/<int:entry_id>/', views.delete_journal_entry, name='delete_journal_entry'),
     path('home/toggle-bookmark/<int:entry_id>/', views.toggle_bookmark, name='toggle_bookmark'),
+    path('home/emotion-analytics/', views.emotion_analytics, name='emotion_analytics'),
+    # Emotion API endpoints
+    path('api/emotion-stats/', views.get_emotion_stats, name='emotion_stats'),
+    path('api/emotion-trends/', views.get_emotion_trends, name='emotion_trends'),
+    path('api/emotion-by-theme/', views.get_emotion_by_theme, name='emotion_by_theme'),
+    path('api/emotion-entries/', views.get_entries_by_emotion, name='get_entries_by_emotion'),
+    # Emotion export endpoints
+    path('api/emotion-export/csv/', views.export_emotion_report_csv, name='export_emotion_csv'),
+    path('api/emotion-export/json/', views.export_emotion_report_json, name='export_emotion_json'),
     path('login/', include('authentication.urls')),
 ]
 

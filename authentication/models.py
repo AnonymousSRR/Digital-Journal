@@ -132,6 +132,29 @@ class JournalEntry(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     bookmarked = models.BooleanField(default=False)  # New field for bookmarking
     writing_time = models.IntegerField(default=0, help_text="Time spent writing in seconds")
+    
+    # Emotion analysis fields
+    primary_emotion = models.CharField(
+        max_length=20,
+        default='neutral',
+        choices=[
+            ('joyful', 'Joyful'),
+            ('sad', 'Sad'),
+            ('angry', 'Angry'),
+            ('anxious', 'Anxious'),
+            ('calm', 'Calm'),
+            ('neutral', 'Neutral'),
+        ],
+        help_text="Primary emotion detected in the entry"
+    )
+    sentiment_score = models.FloatField(
+        default=0.0,
+        help_text="Sentiment score from -1.0 (negative) to 1.0 (positive)"
+    )
+    emotion_data = models.JSONField(
+        default=dict,
+        help_text="Breakdown of emotions: {emotion: score}"
+    )
 
     class Meta:
         ordering = ['-created_at']

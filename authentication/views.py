@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.views.generic import CreateView, FormView
 from django.urls import reverse_lazy
 from django.contrib.auth.views import LoginView
@@ -14,6 +14,7 @@ from .forms import CustomUserCreationForm, CustomAuthenticationForm
 import requests
 import json
 import time
+from datetime import datetime
 from django.db import models
 
 
@@ -514,3 +515,180 @@ def toggle_bookmark(request, entry_id):
     
     # If not POST request, redirect to my journals
     return redirect('my_journals')
+
+
+# Emotion Analytics Views
+
+@login_required
+def get_emotion_stats(request):
+    """
+    Get overall emotion statistics for the logged-in user.
+    Returns JSON with:
+    - total_entries: number of entries
+    - primary_emotion_distribution: dict of emotion counts
+    - average_sentiment_score: float
+    """
+    from django.db.models import Avg
+    
+    entries = JournalEntry.objects.filter(user=request.user)
+    
+    # Count emotion distribution
+    emotion_distribution = {}
+    for entry in entries:
+        emotion = entry.primary_emotion
+        emotion_distribution[emotion] = emotion_distribution.get(emotion, 0) + 1
+    
+    # Calculate average sentiment
+    avg_sentiment = entries.aggregate(Avg('sentiment_score'))['sentiment_score__avg'] or 0.0
+    
+    stats = {
+        'total_entries': entries.count(),
+        'primary_emotion_distribution': emotion_distribution,
+        'average_sentiment_score': round(avg_sentiment, 3),
+    }
+    
+    return JsonResponse(stats)
+
+
+@login_required
+def get_emotion_trends(request):
+    """
+    Get emotion trends over time for the logged-in user.
+    Query params: days (default 30) - number of days to look back
+    Returns JSON array of daily emotion data
+    """
+    from datetime import datetime, timedelta
+    from django.db.models import Avg
+    
+    days = int(request.GET.get('days', 30))
+    start_date = datetime.now().date() - timedelta(days=days)
+    
+    entries = JournalEntry.objects.filter(
+        user=request.user,
+        created_at__date__gte=start_date
+    ).order_by('created_at')
+    
+    # Group emotions by date
+    trends = {}
+    for entry in entries:
+        date_key = entry.created_at.date().isoformat()
+        if date_key not in trends:
+            trends[date_key] = {'date': date_key, 'emotions': {}, 'average_sentiment': 0.0}
+        
+        emotion = entry.primary_emotion
+        trends[date_key]['emotions'][emotion] = trends[date_key]['emotions'].get(emotion, 0) + 1
+    
+    # Calculate average sentiment per date
+    for date_key in trends.keys():
+        date_entries = entries.filter(created_at__date=date_key)
+        avg_sentiment = date_entries.aggregate(Avg('sentiment_score'))['sentiment_score__avg'] or 0.0
+        trends[date_key]['average_sentiment'] = round(avg_sentiment, 3)
+    
+    return JsonResponse(list(trends.values()), safe=False)
+
+
+@login_required
+def get_emotion_by_theme(request):
+    """
+    Get emotion statistics broken down by theme.
+    Returns JSON object with theme names as keys
+    """
+    entries = JournalEntry.objects.filter(user=request.user)
+    
+    theme_emotions = {}
+    for entry in entries:
+        theme_name = entry.theme.name
+        if theme_name not in theme_emotions:
+            theme_emotions[theme_name] = {
+                'emotions': {},
+                'sentiments': [],
+                'count': 0
+            }
+        
+        emotion = entry.primary_emotion
+        theme_emotions[theme_name]['emotions'][emotion] = \
+            theme_emotions[theme_name]['emotions'].get(emotion, 0) + 1
+        theme_emotions[theme_name]['sentiments'].append(entry.sentiment_score)
+        theme_emotions[theme_name]['count'] += 1
+    
+    # Format response
+    result = {}
+    for theme_name, data in theme_emotions.items():
+        avg_sentiment = sum(data['sentiments']) / len(data['sentiments']) if data['sentiments'] else 0.0
+        result[theme_name] = {
+            'emotion_distribution': data['emotions'],
+            'average_sentiment': round(avg_sentiment, 3),
+            'entry_count': data['count']
+        }
+    
+    return JsonResponse(result)
+
+
+@login_required
+def get_entries_by_emotion(request):
+    """
+    Get journal entries filtered by emotion and optional sentiment range.
+    Query params:
+    - emotion: primary emotion to filter by
+    - min_sentiment: minimum sentiment score (-1.0 to 1.0)
+    - max_sentiment: maximum sentiment score (-1.0 to 1.0)
+    Returns JSON with entries array and count
+    """
+    from authentication.serializers import serialize_journal_entry_emotion
+    
+    emotion = request.GET.get('emotion')
+    min_sentiment = request.GET.get('min_sentiment')
+    max_sentiment = request.GET.get('max_sentiment')
+    
+    entries = JournalEntry.objects.filter(user=request.user)
+    
+    if emotion:
+        entries = entries.filter(primary_emotion=emotion)
+    
+    if min_sentiment:
+        try:
+            entries = entries.filter(sentiment_score__gte=float(min_sentiment))
+        except ValueError:
+            pass
+    
+    if max_sentiment:
+        try:
+            entries = entries.filter(sentiment_score__lte=float(max_sentiment))
+        except ValueError:
+            pass
+    
+    serialized_entries = [serialize_journal_entry_emotion(entry) for entry in entries]
+    return JsonResponse({'entries': serialized_entries, 'count': entries.count()})
+
+
+@login_required
+def emotion_analytics(request):
+    """View for displaying emotion analytics dashboard."""
+    context = {
+        'page_title': 'Emotional Analytics'
+    }
+    return render(request, 'authentication/emotion_analytics.html', context)
+
+
+@login_required
+def export_emotion_report_csv(request):
+    """Export emotion data as CSV file."""
+    from authentication.utils import EmotionReportGenerator
+    
+    days = int(request.GET.get('days', 90))
+    csv_content = EmotionReportGenerator.generate_csv_report(request.user, days=days)
+    
+    response = HttpResponse(csv_content, content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="emotion_report_{datetime.now().date()}.csv"'
+    return response
+
+
+@login_required
+def export_emotion_report_json(request):
+    """Export emotion data and statistics as JSON."""
+    from authentication.utils import EmotionReportGenerator
+    from datetime import datetime
+    
+    days = int(request.GET.get('days', 90))
+    stats = EmotionReportGenerator.generate_summary_stats(request.user, days=days)
+    return JsonResponse(stats)

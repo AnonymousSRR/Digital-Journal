@@ -1,10 +1,12 @@
 {% extends 'base.html' %}
 {% load time_filters %}
+{% load static %}
 
 {% block title %}My Journals - Digital Journal App{% endblock %}
 
 {% block content %}
 {% csrf_token %}
+<link rel="stylesheet" href="{% static 'css/emotion_styles.css' %}">
 <div class="my-journals-container">
     <div class="my-journals-header">
         <a href="{% url 'home' %}" class="back-button">
@@ -30,6 +32,12 @@
                             <div class="journal-detail">
                                 <span class="detail-label">Title:</span>
                                 <span class="detail-value">{{ entry.title }}</span>
+                                <span class="emotion-badge emotion-{{ entry.primary_emotion }}">
+                                    {{ entry.get_primary_emotion_display }}
+                                </span>
+                                <span class="sentiment-score" title="Sentiment Score: {{ entry.sentiment_score }}">
+                                    {{ entry.sentiment_score|floatformat:2 }}
+                                </span>
                             </div>
                             <div class="journal-detail">
                                 <span class="detail-label">Theme:</span>
@@ -79,6 +87,12 @@
                             <div class="journal-detail">
                                 <span class="detail-label">Title:</span>
                                 <span class="detail-value">{{ entry.title }}</span>
+                                <span class="emotion-badge emotion-{{ entry.primary_emotion }}">
+                                    {{ entry.get_primary_emotion_display }}
+                                </span>
+                                <span class="sentiment-score" title="Sentiment Score: {{ entry.sentiment_score }}">
+                                    {{ entry.sentiment_score|floatformat:2 }}
+                                </span>
                             </div>
                             <div class="journal-detail">
                                 <span class="detail-label">Theme:</span>
@@ -152,6 +166,10 @@
                     <div class="modal-journal-detail">
                         <span class="modal-detail-label">Title:</span>
                         <span class="modal-detail-value" id="modalTitle"></span>
+                        <span class="emotion-badge emotion-neutral" id="modalEmotion">
+                            Neutral
+                        </span>
+                        <span class="sentiment-score" id="modalSentiment">0.00</span>
                     </div>
                     <div class="modal-journal-detail">
                         <span class="modal-detail-label">Theme:</span>
@@ -199,7 +217,9 @@ journalEntries[{{ entry.id }}] = {
     prompt: "{{ entry.prompt|escapejs }}",
     answer: "{{ entry.answer|escapejs }}",
     bookmarked: true,
-    writing_time: {{ entry.writing_time|default:0 }}
+    writing_time: {{ entry.writing_time|default:0 }},
+    primary_emotion: "{{ entry.primary_emotion }}",
+    sentiment_score: {{ entry.sentiment_score }}
 };
 {% endfor %}
 {% for entry in regular_entries %}
@@ -210,7 +230,9 @@ journalEntries[{{ entry.id }}] = {
     prompt: "{{ entry.prompt|escapejs }}",
     answer: "{{ entry.answer|escapejs }}",
     bookmarked: false,
-    writing_time: {{ entry.writing_time|default:0 }}
+    writing_time: {{ entry.writing_time|default:0 }},
+    primary_emotion: "{{ entry.primary_emotion }}",
+    sentiment_score: {{ entry.sentiment_score }}
 };
 {% endfor %}
 
@@ -242,6 +264,12 @@ function openJournalModal(entryId) {
     document.getElementById('modalPrompt').textContent = entry.prompt;
     document.getElementById('modalAnswer').textContent = entry.answer;
     document.getElementById('modalWritingTime').textContent = formatWritingTime(entry.writing_time);
+    
+    // Populate emotion data
+    const emotionBadge = document.getElementById('modalEmotion');
+    emotionBadge.textContent = entry.primary_emotion || 'Neutral';
+    emotionBadge.className = 'emotion-badge emotion-' + (entry.primary_emotion || 'neutral');
+    document.getElementById('modalSentiment').textContent = (entry.sentiment_score || 0).toFixed(2);
     
     // Show modal
     document.getElementById('journalModal').style.display = 'flex';
