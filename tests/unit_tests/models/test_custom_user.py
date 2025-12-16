@@ -118,4 +118,86 @@ class JournalEntryModelTest(TestCase):
         
         entries = JournalEntry.objects.all()
         self.assertEqual(entries[0], second_entry)  # Newest first
-        self.assertEqual(entries[1], self.journal_entry) 
+        self.assertEqual(entries[1], self.journal_entry)
+    
+    def test_default_visibility_is_private(self):
+        """Test that new journal entries default to private visibility"""
+        # Arrange & Act: Create entry without specifying visibility
+        entry = JournalEntry.objects.create(
+            user=self.user,
+            title='Test Entry',
+            theme=self.theme,
+            prompt='Test prompt',
+            answer='Test answer'
+        )
+        
+        # Assert: Entry should be private by default
+        self.assertEqual(entry.visibility, 'private')
+        self.assertTrue(entry.is_private())
+        self.assertFalse(entry.is_shared())
+    
+    def test_create_shared_entry(self):
+        """Test that entries can be explicitly marked as shared"""
+        # Arrange & Act: Create entry with shared visibility
+        entry = JournalEntry.objects.create(
+            user=self.user,
+            title='Shared Entry',
+            theme=self.theme,
+            prompt='Test prompt',
+            answer='Test answer',
+            visibility='shared'
+        )
+        
+        # Assert: Entry should be shared
+        self.assertEqual(entry.visibility, 'shared')
+        self.assertTrue(entry.is_shared())
+        self.assertFalse(entry.is_private())
+    
+    def test_visibility_choices_validation(self):
+        """Test that only valid visibility values are accepted"""
+        # Arrange & Act: Create entry with valid visibility
+        entry = JournalEntry.objects.create(
+            user=self.user,
+            title='Test Entry',
+            theme=self.theme,
+            prompt='Test prompt',
+            answer='Test answer',
+            visibility='private'
+        )
+        
+        # Assert: Should save successfully
+        self.assertIsNotNone(entry.id)
+        
+        # Arrange: Try to set invalid visibility
+        entry.visibility = 'invalid'
+        
+        # Act & Assert: Should raise validation error
+        with self.assertRaises(ValidationError):
+            entry.full_clean()
+    
+    def test_toggle_entry_visibility(self):
+        """Test changing entry visibility from private to shared and back"""
+        # Arrange: Create private entry
+        entry = JournalEntry.objects.create(
+            user=self.user,
+            title='Toggle Test',
+            theme=self.theme,
+            prompt='Test prompt',
+            answer='Test answer'
+        )
+        
+        # Act: Change to shared
+        entry.visibility = 'shared'
+        entry.save()
+        entry.refresh_from_db()
+        
+        # Assert: Entry is now shared
+        self.assertTrue(entry.is_shared())
+        
+        # Act: Change back to private
+        entry.visibility = 'private'
+        entry.save()
+        entry.refresh_from_db()
+        
+        # Assert: Entry is now private
+        self.assertTrue(entry.is_private()) 

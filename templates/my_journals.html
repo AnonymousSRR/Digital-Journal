@@ -7,12 +7,34 @@
 {% block content %}
 {% csrf_token %}
 <link rel="stylesheet" href="{% static 'css/emotion_styles.css' %}">
+<link rel="stylesheet" href="{% static 'css/visibility_styles.css' %}">
 <div class="my-journals-container">
     <div class="my-journals-header">
         <a href="{% url 'home' %}" class="back-button">
             <span>← Back</span>
         </a>
         <h1 class="my-journals-title">My Journals</h1>
+    </div>
+    
+    <!-- Filter Controls -->
+    <div class="journals-filters">
+        <div class="filter-group">
+            <label class="filter-label">Show:</label>
+            <div class="filter-buttons">
+                <a href="?visibility=all{% if search_query %}&search={{ search_query }}{% endif %}" 
+                   class="filter-btn {% if visibility_filter == 'all' or not visibility_filter %}active{% endif %}">
+                    All Entries
+                </a>
+                <a href="?visibility=private{% if search_query %}&search={{ search_query }}{% endif %}" 
+                   class="filter-btn {% if visibility_filter == 'private' %}active{% endif %}">
+                    🔒 Private Only
+                </a>
+                <a href="?visibility=shared{% if search_query %}&search={{ search_query }}{% endif %}" 
+                   class="filter-btn {% if visibility_filter == 'shared' %}active{% endif %}">
+                    🌐 Shared Only
+                </a>
+            </div>
+        </div>
     </div>
     
     <!-- Bookmarked Entries Section -->
@@ -24,9 +46,19 @@
                     <div class="journal-card bookmarked-card" data-entry-id="{{ entry.id }}" onclick="openJournalModal({{ entry.id }})">
                         <div class="journal-card-header">
                             <div class="journal-date">{{ entry.created_at|date:"M d, Y" }}</div>
-                            <button class="bookmark-btn bookmarked" onclick="toggleBookmark({{ entry.id }}, event)" title="Remove bookmark">
-                                📌
-                            </button>
+                            <div class="journal-badges">
+                                <span class="visibility-badge visibility-{{ entry.visibility }}" 
+                                      title="{{ entry.get_visibility_display }}">
+                                    {% if entry.visibility == 'private' %}
+                                        🔒 Private
+                                    {% else %}
+                                        🌐 Shared
+                                    {% endif %}
+                                </span>
+                                <button class="bookmark-btn bookmarked" onclick="toggleBookmark({{ entry.id }}, event)" title="Remove bookmark">
+                                    📌
+                                </button>
+                            </div>
                         </div>
                         <div class="journal-card-content">
                             <div class="journal-detail">
@@ -79,9 +111,19 @@
                     <div class="journal-card" data-entry-id="{{ entry.id }}" onclick="openJournalModal({{ entry.id }})">
                         <div class="journal-card-header">
                             <div class="journal-date">{{ entry.created_at|date:"M d, Y" }}</div>
-                            <button class="bookmark-btn" onclick="toggleBookmark({{ entry.id }}, event)" title="Add bookmark">
-                                📌
-                            </button>
+                            <div class="journal-badges">
+                                <span class="visibility-badge visibility-{{ entry.visibility }}" 
+                                      title="{{ entry.get_visibility_display }}">
+                                    {% if entry.visibility == 'private' %}
+                                        🔒 Private
+                                    {% else %}
+                                        🌐 Shared
+                                    {% endif %}
+                                </span>
+                                <button class="bookmark-btn" onclick="toggleBookmark({{ entry.id }}, event)" title="Add bookmark">
+                                    📌
+                                </button>
+                            </div>
                         </div>
                         <div class="journal-card-content">
                             <div class="journal-detail">
@@ -187,6 +229,16 @@
                         <span class="modal-detail-label">Answer:</span>
                         <span class="modal-detail-value modal-answer-text" id="modalAnswer"></span>
                     </div>
+                    <div class="modal-actions">
+                        <button class="visibility-toggle-btn" 
+                                onclick="toggleVisibility()"
+                                id="visibilityToggleBtn">
+                            <span class="visibility-icon" id="visibilityIcon">🔒</span>
+                            <span class="visibility-toggle-text" id="visibilityToggleText">
+                                Make Shared
+                            </span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -219,7 +271,8 @@ journalEntries[{{ entry.id }}] = {
     bookmarked: true,
     writing_time: {{ entry.writing_time|default:0 }},
     primary_emotion: "{{ entry.primary_emotion }}",
-    sentiment_score: {{ entry.sentiment_score }}
+    sentiment_score: {{ entry.sentiment_score }},
+    visibility: "{{ entry.visibility }}"
 };
 {% endfor %}
 {% for entry in regular_entries %}
@@ -232,7 +285,8 @@ journalEntries[{{ entry.id }}] = {
     bookmarked: false,
     writing_time: {{ entry.writing_time|default:0 }},
     primary_emotion: "{{ entry.primary_emotion }}",
-    sentiment_score: {{ entry.sentiment_score }}
+    sentiment_score: {{ entry.sentiment_score }},
+    visibility: "{{ entry.visibility }}"
 };
 {% endfor %}
 
@@ -257,6 +311,9 @@ function openJournalModal(entryId) {
     const entry = journalEntries[entryId];
     if (!entry) return;
     
+    // Store current entry ID for visibility toggle
+    window.currentModalEntryId = entryId;
+    
     // Populate modal content
     document.getElementById('modalDate').textContent = entry.date;
     document.getElementById('modalTitle').textContent = entry.title;
@@ -271,9 +328,52 @@ function openJournalModal(entryId) {
     emotionBadge.className = 'emotion-badge emotion-' + (entry.primary_emotion || 'neutral');
     document.getElementById('modalSentiment').textContent = (entry.sentiment_score || 0).toFixed(2);
     
+    // Update visibility toggle button
+    updateVisibilityToggleButton(entry.visibility);
+    
     // Show modal
     document.getElementById('journalModal').style.display = 'flex';
     document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+
+function updateVisibilityToggleButton(visibility) {
+    const icon = document.getElementById('visibilityIcon');
+    const text = document.getElementById('visibilityToggleText');
+    
+    if (visibility === 'private') {
+        icon.textContent = '🔒';
+        text.textContent = 'Make Shared';
+    } else {
+        icon.textContent = '🌐';
+        text.textContent = 'Make Private';
+    }
+}
+
+function toggleVisibility() {
+    const entryId = window.currentModalEntryId;
+    if (!entryId) return;
+    
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch(`/home/toggle-visibility/${entryId}/`, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Refresh the page to show updated visibility
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error toggling visibility:', error);
+        alert('Failed to change visibility. Please try again.');
+    });
 }
 
 function closeJournalModal() {

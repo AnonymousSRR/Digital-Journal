@@ -26,6 +26,14 @@ def my_journals_view(request):
     # Get all journal entries for the current user
     journal_entries = JournalEntry.objects.filter(user=request.user)
     
+    # Handle visibility filter
+    visibility_filter = request.GET.get('visibility', 'all')
+    if visibility_filter == 'private':
+        journal_entries = journal_entries.filter(visibility='private')
+    elif visibility_filter == 'shared':
+        journal_entries = journal_entries.filter(visibility='shared')
+    # 'all' shows everything (no filter)
+    
     # Handle search functionality
     search_query = request.GET.get('search', '')
     if search_query:
@@ -42,7 +50,8 @@ def my_journals_view(request):
     return render(request, 'my_journals.html', {
         'bookmarked_entries': bookmarked_entries,
         'regular_entries': regular_entries,
-        'search_query': search_query
+        'search_query': search_query,
+        'visibility_filter': visibility_filter
     })
 
 @login_required
@@ -102,6 +111,11 @@ def answer_prompt_view(request):
         title = request.POST.get('title')
         prompt = request.POST.get('prompt')
         writing_time = request.POST.get('writing_time', 0)
+        visibility = request.POST.get('visibility', 'private')
+        
+        # Validate visibility value
+        if visibility not in ['private', 'shared']:
+            visibility = 'private'
         
         if not answer or not title:
             messages.error(request, 'Please provide both a title and your response.')
@@ -121,7 +135,8 @@ def answer_prompt_view(request):
                 prompt=prompt,
                 answer=answer,
                 bookmarked=False,  # Add default value for deployed app
-                writing_time=int(writing_time) if writing_time else 0
+                writing_time=int(writing_time) if writing_time else 0,
+                visibility=visibility
             )
             
             messages.success(request, f'Journal entry "{title}" saved successfully!')
@@ -517,6 +532,35 @@ def toggle_bookmark(request, entry_id):
     return redirect('my_journals')
 
 
+@login_required
+def toggle_visibility(request, entry_id):
+    """Toggle visibility status of a journal entry between private and shared"""
+    if request.method == 'POST':
+        # Get the journal entry and ensure it belongs to the current user
+        journal_entry = get_object_or_404(JournalEntry, id=entry_id, user=request.user)
+        
+        # Toggle the visibility status
+        journal_entry.visibility = 'shared' if journal_entry.visibility == 'private' else 'private'
+        journal_entry.save()
+        
+        # Return JSON response for AJAX requests
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'visibility': journal_entry.visibility,
+                'message': f'Entry marked as {journal_entry.get_visibility_display()}.'
+            })
+        
+        # Show success message for regular requests
+        messages.success(request, f'Entry visibility changed to {journal_entry.get_visibility_display()}.')
+        
+        # Redirect back to my journals page
+        return redirect('my_journals')
+    
+    # If not POST request, redirect to my journals
+    return redirect('my_journals')
+
+
 # Emotion Analytics Views
 
 @login_required
@@ -527,6 +571,7 @@ def get_emotion_stats(request):
     - total_entries: number of entries
     - primary_emotion_distribution: dict of emotion counts
     - average_sentiment_score: float
+    - visibility_breakdown: dict of visibility counts
     """
     from django.db.models import Avg
     
@@ -541,10 +586,17 @@ def get_emotion_stats(request):
     # Calculate average sentiment
     avg_sentiment = entries.aggregate(Avg('sentiment_score'))['sentiment_score__avg'] or 0.0
     
+    # Add visibility breakdown
+    visibility_stats = {
+        'private': entries.filter(visibility='private').count(),
+        'shared': entries.filter(visibility='shared').count()
+    }
+    
     stats = {
         'total_entries': entries.count(),
         'primary_emotion_distribution': emotion_distribution,
         'average_sentiment_score': round(avg_sentiment, 3),
+        'visibility_breakdown': visibility_stats
     }
     
     return JsonResponse(stats)

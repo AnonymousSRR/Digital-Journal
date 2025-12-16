@@ -37,6 +37,32 @@
                 <input type="text" id="title" name="title" class="form-control title-input" placeholder="Enter a title for your journal entry..." value="{{ title|default:'' }}" required>
             </div>
             
+            <div class="form-group visibility-group">
+                <label for="visibility" class="form-label">Visibility</label>
+                <div class="visibility-options">
+                    <label class="visibility-option">
+                        <input type="radio" name="visibility" value="private" checked>
+                        <span class="visibility-label">
+                            <span class="visibility-icon">🔒</span>
+                            <span class="visibility-text">
+                                <strong>Private</strong>
+                                <small>Only you can see this entry</small>
+                            </span>
+                        </span>
+                    </label>
+                    <label class="visibility-option">
+                        <input type="radio" name="visibility" value="shared">
+                        <span class="visibility-label">
+                            <span class="visibility-icon">🌐</span>
+                            <span class="visibility-text">
+                                <strong>Shared</strong>
+                                <small>Can be shared with others</small>
+                            </span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+            
             <div class="form-group">
                 <label for="answer" class="form-label">Your Response</label>
                 <textarea id="answer" name="answer" class="form-control answer-textarea" placeholder="Write your thoughts, reflections, or answers here..." required>{{ answer|default:'' }}</textarea>
@@ -114,6 +140,67 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
+.visibility-group {
+    margin: 20px 0;
+}
+
+.visibility-options {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.visibility-option {
+    flex: 1;
+    min-width: 200px;
+    cursor: pointer;
+}
+
+.visibility-option input[type="radio"] {
+    display: none;
+}
+
+.visibility-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.visibility-option input[type="radio"]:checked + .visibility-label {
+    border-color: #4a90e2;
+    background: #f0f7ff;
+}
+
+.visibility-option:hover .visibility-label {
+    border-color: #4a90e2;
+}
+
+.visibility-icon {
+    font-size: 24px;
+    line-height: 1;
+}
+
+.visibility-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.visibility-text strong {
+    font-size: 14px;
+    color: #333;
+}
+
+.visibility-text small {
+    font-size: 12px;
+    color: #666;
+}
+
 .writing-timer {
     display: flex;
     align-items: center;

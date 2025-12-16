@@ -133,6 +133,17 @@ class JournalEntry(models.Model):
     bookmarked = models.BooleanField(default=False)  # New field for bookmarking
     writing_time = models.IntegerField(default=0, help_text="Time spent writing in seconds")
     
+    # Visibility control field
+    visibility = models.CharField(
+        max_length=10,
+        default='private',
+        choices=[
+            ('private', 'Private'),
+            ('shared', 'Shared'),
+        ],
+        help_text="Control who can view this entry"
+    )
+    
     # Emotion analysis fields
     primary_emotion = models.CharField(
         max_length=20,
@@ -161,3 +172,11 @@ class JournalEntry(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.created_at.date()} - {self.theme.name}"
+    
+    def is_private(self):
+        """Check if this entry is private."""
+        return self.visibility == 'private'
+    
+    def is_shared(self):
+        """Check if this entry is shared."""
+        return self.visibility == 'shared'

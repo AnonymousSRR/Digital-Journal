@@ -1,0 +1,113 @@
+/* Visibility badge styles */
+.visibility-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.visibility-badge.visibility-private {
+    background-color: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+}
+
+.visibility-badge.visibility-shared {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+}
+
+.journal-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Filter controls */
+.journals-filters {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f9fafb;
+    border-radius: 8px;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 14px;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    background-color: white;
+    border: 2px solid #d1d5db;
+    border-radius: 6px;
+    color: #374151;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+    border-color: #4a90e2;
+    background-color: #f0f7ff;
+}
+
+.filter-btn.active {
+    background-color: #4a90e2;
+    border-color: #4a90e2;
+    color: white;
+}
+
+/* Modal visibility toggle button */
+.modal-actions {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: center;
+}
+
+.visibility-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background-color: #f9fafb;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    transition: all 0.2s ease;
+}
+
+.visibility-toggle-btn:hover {
+    background-color: #f3f4f6;
+    border-color: #4a90e2;
+    color: #1e40af;
+}
+
+.visibility-toggle-btn .visibility-icon {
+    font-size: 18px;
+}

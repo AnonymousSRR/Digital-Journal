@@ -42,6 +42,7 @@ urlpatterns = [
     path('home/my-journals/', views.my_journals_view, name='my_journals'),
     path('home/delete-journal/<int:entry_id>/', views.delete_journal_entry, name='delete_journal_entry'),
     path('home/toggle-bookmark/<int:entry_id>/', views.toggle_bookmark, name='toggle_bookmark'),
+    path('home/toggle-visibility/<int:entry_id>/', views.toggle_visibility, name='toggle_visibility'),
     path('home/emotion-analytics/', views.emotion_analytics, name='emotion_analytics'),
     # Emotion API endpoints
     path('api/emotion-stats/', views.get_emotion_stats, name='emotion_stats'),

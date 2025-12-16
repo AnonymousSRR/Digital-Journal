@@ -349,4 +349,402 @@ class TestSignInView(TestCase):
         context = view.get_context_data()
         
         self.assertIn('active_tab', context)
-        self.assertEqual(context['active_tab'], 'signin') 
+        self.assertEqual(context['active_tab'], 'signin')
+
+
+class TestAnswerPromptVisibility(TestCase):
+    """Test cases for answer_prompt_view visibility handling"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.factory = RequestFactory()
+        self.user = CustomUser.objects.create_user(
+            email='test@example.com',
+            password='testpass123',
+            first_name='John',
+            last_name='Doe'
+        )
+        self.theme = Theme.objects.create(
+            name='Leadership',
+            description='Leadership themes'
+        )
+    
+    @patch('authentication.views.generate_theme_prompt')
+    def test_create_entry_with_private_visibility(self, mock_generate):
+        """Test creating a journal entry with private visibility"""
+        # Mock the prompt generation
+        mock_generate.return_value = 'Test prompt'
+        
+        # Create POST request with private visibility
+        request = self.factory.post(
+            f'/answer-prompt/?theme_id={self.theme.id}',
+            {
+                'title': 'My Private Thoughts',
+                'answer': 'This is private content',
+                'prompt': 'Test prompt',
+                'writing_time': 60,
+                'visibility': 'private'
+            }
+        )
+        request.user = self.user
+        
+        # Mock messages
+        from django.contrib.messages.storage.fallback import FallbackStorage
+        from django.contrib.sessions.backends.db import SessionStore
+        setattr(request, 'session', SessionStore())
+        setattr(request, '_messages', FallbackStorage(request))
+        
+        # Call view
+        response = answer_prompt_view(request)
+        
+        # Assert: Entry created with private visibility
+        entry = JournalEntry.objects.get(user=self.user, title='My Private Thoughts')
+        self.assertEqual(entry.visibility, 'private')
+        self.assertTrue(entry.is_private())
+    
+    @patch('authentication.views.generate_theme_prompt')
+    def test_create_entry_with_shared_visibility(self, mock_generate):
+        """Test creating a journal entry with shared visibility"""
+        # Mock the prompt generation
+        mock_generate.return_value = 'Test prompt'
+        
+        # Create POST request with shared visibility
+        request = self.factory.post(
+            f'/answer-prompt/?theme_id={self.theme.id}',
+            {
+                'title': 'Shareable Insights',
+                'answer': 'This can be shared',
+                'prompt': 'Test prompt',
+                'writing_time': 90,
+                'visibility': 'shared'
+            }
+        )
+        request.user = self.user
+        
+        # Mock messages
+        from django.contrib.messages.storage.fallback import FallbackStorage
+        from django.contrib.sessions.backends.db import SessionStore
+        setattr(request, 'session', SessionStore())
+        setattr(request, '_messages', FallbackStorage(request))
+        
+        # Call view
+        response = answer_prompt_view(request)
+        
+        # Assert: Entry created with shared visibility
+        entry = JournalEntry.objects.get(user=self.user, title='Shareable Insights')
+        self.assertEqual(entry.visibility, 'shared')
+        self.assertTrue(entry.is_shared())
+    
+    @patch('authentication.views.generate_theme_prompt')
+    def test_invalid_visibility_defaults_to_private(self, mock_generate):
+        """Test that invalid visibility values default to private"""
+        # Mock the prompt generation
+        mock_generate.return_value = 'Test prompt'
+        
+        # Create POST request with invalid visibility
+        request = self.factory.post(
+            f'/answer-prompt/?theme_id={self.theme.id}',
+            {
+                'title': 'Test Entry',
+                'answer': 'Test content',
+                'prompt': 'Test prompt',
+                'writing_time': 30,
+                'visibility': 'invalid_value'
+            }
+        )
+        request.user = self.user
+        
+        # Mock messages
+        from django.contrib.messages.storage.fallback import FallbackStorage
+        from django.contrib.sessions.backends.db import SessionStore
+        setattr(request, 'session', SessionStore())
+        setattr(request, '_messages', FallbackStorage(request))
+        
+        # Call view
+        response = answer_prompt_view(request)
+        
+        # Assert: Entry defaults to private
+        entry = JournalEntry.objects.get(user=self.user, title='Test Entry')
+        self.assertEqual(entry.visibility, 'private')
+    
+    @patch('authentication.views.generate_theme_prompt')
+    def test_missing_visibility_defaults_to_private(self, mock_generate):
+        """Test that missing visibility parameter defaults to private"""
+        # Mock the prompt generation
+        mock_generate.return_value = 'Test prompt'
+        
+        # Create POST request without visibility
+        request = self.factory.post(
+            f'/answer-prompt/?theme_id={self.theme.id}',
+            {
+                'title': 'No Visibility Set',
+                'answer': 'Test content',
+                'prompt': 'Test prompt',
+                'writing_time': 45
+                # visibility not included
+            }
+        )
+        request.user = self.user
+        
+        # Mock messages
+        from django.contrib.messages.storage.fallback import FallbackStorage
+        from django.contrib.sessions.backends.db import SessionStore
+        setattr(request, 'session', SessionStore())
+        setattr(request, '_messages', FallbackStorage(request))
+        
+        # Call view
+        response = answer_prompt_view(request)
+        
+        # Assert: Entry defaults to private
+        entry = JournalEntry.objects.get(user=self.user, title='No Visibility Set')
+        self.assertEqual(entry.visibility, 'private')
+
+
+class TestToggleVisibility(TestCase):
+    """Test cases for toggle_visibility view"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.factory = RequestFactory()
+        self.user = CustomUser.objects.create_user(
+            email='test@example.com',
+            password='testpass123',
+            first_name='John',
+            last_name='Doe'
+        )
+        self.theme = Theme.objects.create(
+            name='Leadership',
+            description='Leadership themes'
+        )
+    
+    def test_toggle_visibility_private_to_shared(self):
+        """Test toggling entry visibility from private to shared"""
+        # Arrange: Create private entry
+        entry = JournalEntry.objects.create(
+            user=self.user,
+            title='Test Entry',
+            theme=self.theme,
+            prompt='Test prompt',
+            answer='Test answer',
+            visibility='private'
+        )
+        
+        # Act: Toggle visibility
+        from authentication.views import toggle_visibility
+        request = self.factory.post(f'/home/toggle-visibility/{entry.id}/')
+        request.user = self.user
+        
+        # Mock messages
+        from django.contrib.messages.storage.fallback import FallbackStorage
+        from django.contrib.sessions.backends.db import SessionStore
+        setattr(request, 'session', SessionStore())
+        setattr(request, '_messages', FallbackStorage(request))
+        
+        response = toggle_visibility(request, entry.id)
+        
+        # Assert: Entry is now shared
+        entry.refresh_from_db()
+        self.assertEqual(entry.visibility, 'shared')
+    
+    def test_toggle_visibility_shared_to_private(self):
+        """Test toggling entry visibility from shared to private"""
+        # Arrange: Create shared entry
+        entry = JournalEntry.objects.create(
+            user=self.user,
+            title='Shared Entry',
+            theme=self.theme,
+            prompt='Test prompt',
+            answer='Test answer',
+            visibility='shared'
+        )
+        
+        # Act: Toggle visibility
+        from authentication.views import toggle_visibility
+        request = self.factory.post(f'/home/toggle-visibility/{entry.id}/')
+        request.user = self.user
+        
+        # Mock messages
+        from django.contrib.messages.storage.fallback import FallbackStorage
+        from django.contrib.sessions.backends.db import SessionStore
+        setattr(request, 'session', SessionStore())
+        setattr(request, '_messages', FallbackStorage(request))
+        
+        response = toggle_visibility(request, entry.id)
+        
+        # Assert: Entry is now private
+        entry.refresh_from_db()
+        self.assertEqual(entry.visibility, 'private')
+    
+    def test_toggle_visibility_ajax_request(self):
+        """Test that AJAX requests return JSON response"""
+        # Arrange: Create entry and setup AJAX request
+        entry = JournalEntry.objects.create(
+            user=self.user,
+            title='Test Entry',
+            theme=self.theme,
+            prompt='Test prompt',
+            answer='Test answer',
+            visibility='private'
+        )
+        
+        request = self.factory.post(f'/home/toggle-visibility/{entry.id}/')
+        request.user = self.user
+        request.META['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest'
+        
+        # Act: Toggle visibility
+        from authentication.views import toggle_visibility
+        response = toggle_visibility(request, entry.id)
+        
+        # Assert: JSON response with success
+        self.assertEqual(response.status_code, 200)
+        import json
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertEqual(data['visibility'], 'shared')
+        self.assertIn('message', data)
+    
+    def test_toggle_visibility_unauthorized_user(self):
+        """Test that users cannot toggle visibility of other users' entries"""
+        # Arrange: Create entry for one user, request from another
+        user1 = CustomUser.objects.create_user(
+            email='user1@example.com',
+            password='testpass123',
+            first_name='User',
+            last_name='One'
+        )
+        user2 = CustomUser.objects.create_user(
+            email='user2@example.com',
+            password='testpass123',
+            first_name='User',
+            last_name='Two'
+        )
+        entry = JournalEntry.objects.create(
+            user=user1,
+            title='User1 Entry',
+            theme=self.theme,
+            prompt='Test prompt',
+            answer='Test answer',
+            visibility='private'
+        )
+        
+        # Act & Assert: User2 trying to toggle User1's entry should raise 404
+        request = self.factory.post(f'/home/toggle-visibility/{entry.id}/')
+        request.user = user2
+        from authentication.views import toggle_visibility
+        from django.http import Http404
+        
+        with self.assertRaises(Http404):
+            toggle_visibility(request, entry.id)
+
+
+class TestVisibilityFiltering(TestCase):
+    """Test cases for visibility filtering in my_journals_view"""
+    
+    def setUp(self):
+        """Set up test data"""
+        self.factory = RequestFactory()
+        self.user = CustomUser.objects.create_user(
+            email='test@example.com',
+            password='testpass123',
+            first_name='John',
+            last_name='Doe'
+        )
+        self.theme = Theme.objects.create(
+            name='Leadership',
+            description='Leadership themes'
+        )
+    
+    def test_filter_private_entries_only(self):
+        """Test that visibility filter shows only private entries"""
+        # Arrange: Create mix of private and shared entries
+        private_entry = JournalEntry.objects.create(
+            user=self.user,
+            title='Private Entry',
+            theme=self.theme,
+            prompt='Test',
+            answer='Test',
+            visibility='private'
+        )
+        shared_entry = JournalEntry.objects.create(
+            user=self.user,
+            title='Shared Entry',
+            theme=self.theme,
+            prompt='Test',
+            answer='Test',
+            visibility='shared'
+        )
+        
+        # Act: Filter by private visibility
+        entries = JournalEntry.objects.filter(user=self.user, visibility='private')
+        
+        # Assert: Only private entry returned
+        self.assertEqual(entries.count(), 1)
+        self.assertEqual(entries.first(), private_entry)
+    
+    def test_filter_shared_entries_only(self):
+        """Test that visibility filter shows only shared entries"""
+        # Arrange: Create mix of entries
+        private_entry = JournalEntry.objects.create(
+            user=self.user,
+            title='Private Entry',
+            theme=self.theme,
+            prompt='Test',
+            answer='Test',
+            visibility='private'
+        )
+        shared_entry = JournalEntry.objects.create(
+            user=self.user,
+            title='Shared Entry',
+            theme=self.theme,
+            prompt='Test',
+            answer='Test',
+            visibility='shared'
+        )
+        
+        # Act: Filter by shared visibility
+        entries = JournalEntry.objects.filter(user=self.user, visibility='shared')
+        
+        # Assert: Only shared entry returned
+        self.assertEqual(entries.count(), 1)
+        self.assertEqual(entries.first(), shared_entry)
+    
+    def test_filter_shows_all_entries(self):
+        """Test that 'all' visibility filter shows all entries"""
+        # Arrange: Create mix of entries
+        JournalEntry.objects.create(user=self.user, title='Private 1', theme=self.theme, 
+                                   prompt='T', answer='T', visibility='private')
+        JournalEntry.objects.create(user=self.user, title='Shared 1', theme=self.theme, 
+                                   prompt='T', answer='T', visibility='shared')
+        JournalEntry.objects.create(user=self.user, title='Private 2', theme=self.theme, 
+                                   prompt='T', answer='T', visibility='private')
+        
+        # Act: Get all entries (no filter)
+        entries = JournalEntry.objects.filter(user=self.user)
+        
+        # Assert: All entries returned
+        self.assertEqual(entries.count(), 3)
+    
+    def test_emotion_stats_includes_visibility_breakdown(self):
+        """Test that emotion stats API includes visibility breakdown"""
+        # Arrange: Create entries with different visibility
+        for i in range(3):
+            JournalEntry.objects.create(user=self.user, title=f'Private {i}', 
+                                       theme=self.theme, prompt='T', answer='T', 
+                                       visibility='private')
+        for i in range(2):
+            JournalEntry.objects.create(user=self.user, title=f'Shared {i}', 
+                                       theme=self.theme, prompt='T', answer='T', 
+                                       visibility='shared')
+        
+        # Act: Request emotion stats
+        request = self.factory.get('/api/emotion-stats/')
+        request.user = self.user
+        from authentication.views import get_emotion_stats
+        response = get_emotion_stats(request)
+        
+        # Assert: Response includes visibility breakdown
+        import json
+        data = json.loads(response.content)
+        self.assertIn('visibility_breakdown', data)
+        self.assertEqual(data['visibility_breakdown']['private'], 3)
+        self.assertEqual(data['visibility_breakdown']['shared'], 2) 
