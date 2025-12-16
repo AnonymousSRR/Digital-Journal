@@ -5,6 +5,7 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.core.validators import EmailValidator
 from django.core.exceptions import ValidationError
+from django.utils.text import slugify
 
 
 class CustomUserManager(BaseUserManager):
@@ -120,6 +121,32 @@ class Theme(models.Model):
         return self.name
 
 
+class Tag(models.Model):
+    """
+    Tag model for categorizing journal entries.
+    Each tag is user-scoped to maintain privacy.
+    """
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='tags')
+    name = models.CharField(max_length=50)
+    slug = models.SlugField(max_length=60)
+
+    class Meta:
+        unique_together = ('user', 'slug')
+        indexes = [
+            models.Index(fields=['user', 'slug']),
+            models.Index(fields=['user', 'name']),
+        ]
+        ordering = ['name']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.name}"
+
+
 class JournalEntry(models.Model):
     """
     Journal entry model for user journal entries.
@@ -166,6 +193,9 @@ class JournalEntry(models.Model):
         default=dict,
         help_text="Breakdown of emotions: {emotion: score}"
     )
+    
+    # Many-to-many relationship with tags
+    tags = models.ManyToManyField('Tag', related_name='entries', blank=True)
 
     class Meta:
         ordering = ['-created_at']

@@ -35,6 +35,22 @@
                 </a>
             </div>
         </div>
+        
+        <div class="filter-group">
+            <label class="filter-label">Tags:</label>
+            <div class="filter-buttons">
+                <a href="?visibility={{ visibility_filter }}{% if search_query %}&search={{ search_query }}{% endif %}"
+                   class="filter-btn {% if not selected_tag %}active{% endif %}">
+                    All Tags
+                </a>
+                {% for tag in tags %}
+                    <a href="?visibility={{ visibility_filter }}{% if search_query %}&search={{ search_query }}{% endif %}&tag={{ tag.slug }}"
+                       class="filter-btn {% if selected_tag == tag.slug %}active{% endif %}">
+                        {{ tag.name }} ({{ tag.entry_count }})
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
     </div>
     
     <!-- Bookmarked Entries Section -->
@@ -88,6 +104,16 @@
                             <div class="journal-detail">
                                 <span class="detail-label">Answer:</span>
                                 <span class="detail-value answer-text">{{ entry.answer|truncatewords:30 }}</span>
+                            </div>
+                            <div class="journal-detail">
+                                <span class="detail-label">Tags:</span>
+                                <span class="detail-value">
+                                    {% for tag in entry.tags.all %}
+                                        <span class="tag-chip">{{ tag.name }}</span>
+                                    {% empty %}
+                                        <span class="tag-chip muted">None</span>
+                                    {% endfor %}
+                                </span>
                             </div>
                             <div class="expand-hint">
                                 <span>Click to expand</span>
@@ -153,6 +179,16 @@
                             <div class="journal-detail">
                                 <span class="detail-label">Answer:</span>
                                 <span class="detail-value answer-text">{{ entry.answer|truncatewords:30 }}</span>
+                            </div>
+                            <div class="journal-detail">
+                                <span class="detail-label">Tags:</span>
+                                <span class="detail-value">
+                                    {% for tag in entry.tags.all %}
+                                        <span class="tag-chip">{{ tag.name }}</span>
+                                    {% empty %}
+                                        <span class="tag-chip muted">None</span>
+                                    {% endfor %}
+                                </span>
                             </div>
                             <div class="expand-hint">
                                 <span>Click to expand</span>

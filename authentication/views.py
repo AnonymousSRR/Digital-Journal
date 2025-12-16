@@ -9,13 +9,14 @@ from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.views.generic import CreateView, FormView
 from django.urls import reverse_lazy
 from django.contrib.auth.views import LoginView
-from .models import CustomUser, Theme, JournalEntry
+from .models import CustomUser, Theme, JournalEntry, Tag
 from .forms import CustomUserCreationForm, CustomAuthenticationForm
 import requests
 import json
 import time
 from datetime import datetime
 from django.db import models
+from django.utils.text import slugify
 
 
 @login_required
@@ -34,6 +35,11 @@ def my_journals_view(request):
         journal_entries = journal_entries.filter(visibility='shared')
     # 'all' shows everything (no filter)
     
+    # Handle tag filter
+    selected_tag = request.GET.get('tag')
+    if selected_tag:
+        journal_entries = journal_entries.filter(tags__slug=selected_tag)
+    
     # Handle search functionality
     search_query = request.GET.get('search', '')
     if search_query:
@@ -47,11 +53,20 @@ def my_journals_view(request):
     bookmarked_entries = journal_entries.filter(bookmarked=True).order_by('-created_at')
     regular_entries = journal_entries.filter(bookmarked=False).order_by('-created_at')
     
+    # Build user tag list with counts for the sidebar/filter
+    user_tags = (
+        Tag.objects.filter(user=request.user)
+           .annotate(entry_count=models.Count('entries'))
+           .order_by('name')
+    )
+    
     return render(request, 'my_journals.html', {
         'bookmarked_entries': bookmarked_entries,
         'regular_entries': regular_entries,
         'search_query': search_query,
-        'visibility_filter': visibility_filter
+        'visibility_filter': visibility_filter,
+        'tags': user_tags,
+        'selected_tag': selected_tag,
     })
 
 @login_required
@@ -112,6 +127,7 @@ def answer_prompt_view(request):
         prompt = request.POST.get('prompt')
         writing_time = request.POST.get('writing_time', 0)
         visibility = request.POST.get('visibility', 'private')
+        tags_raw = request.POST.get('tags', '')
         
         # Validate visibility value
         if visibility not in ['private', 'shared']:
@@ -138,6 +154,20 @@ def answer_prompt_view(request):
                 writing_time=int(writing_time) if writing_time else 0,
                 visibility=visibility
             )
+            
+            # Process and attach tags
+            tags = []
+            for name in [t.strip() for t in tags_raw.split(',') if t.strip()]:
+                slug = slugify(name)
+                if slug:  # Only process if slug is not empty
+                    tag, _ = Tag.objects.get_or_create(
+                        user=request.user,
+                        slug=slug,
+                        defaults={'name': name}
+                    )
+                    tags.append(tag)
+            if tags:
+                journal_entry.tags.add(*tags)
             
             messages.success(request, f'Journal entry "{title}" saved successfully!')
             return redirect('home')

@@ -1392,3 +1392,22 @@ body {
 }
 
 /* Other entries section */ 
+/* Tag chip styles */
+.tag-chip {
+    display: inline-block;
+    padding: 4px 10px;
+    margin: 2px 4px 2px 0;
+    background-color: #e3f2fd;
+    color: #1976d2;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 500;
+    border: 1px solid #90caf9;
+}
+
+.tag-chip.muted {
+    background-color: #f5f5f5;
+    color: #999;
+    border: 1px solid #ddd;
+}
+
