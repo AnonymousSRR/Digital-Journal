@@ -16,16 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
 from django.conf import settings
 from django.conf.urls.static import static
 from authentication import views
-
-@login_required
-def home_view(request):
-    """Home view for authenticated users."""
-    return render(request, 'home.html')
 
 def home_redirect(request):
     """Redirect to authentication page for unauthenticated users."""
@@ -36,7 +30,7 @@ def home_redirect(request):
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', home_redirect, name='home_redirect'),
-    path('home/', home_view, name='home'),
+    path('home/', views.home_view, name='home'),
     path('home/theme-selector/', views.theme_selector_view, name='theme_selector'),
     path('home/answer-prompt/', views.answer_prompt_view, name='answer_prompt'),
     path('home/my-journals/', views.my_journals_view, name='my_journals'),

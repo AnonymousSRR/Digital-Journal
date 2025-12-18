@@ -7,6 +7,35 @@
     <div class="welcome-message">
         <h2>Hi {{ user.first_name }}, what's your plan today?</h2>
     </div>
+    
+    <!-- Summary Widget -->
+    <div class="summary-widget" data-testid="summary-widget">
+        <div class="summary-card" data-testid="total-entries-card">
+            <div class="summary-icon">📝</div>
+            <div class="summary-content">
+                <div class="summary-value" data-testid="total-entries-value">{{ total_entries }}</div>
+                <div class="summary-label">Total Entries</div>
+            </div>
+        </div>
+        
+        <div class="summary-card" data-testid="entries-week-card">
+            <div class="summary-icon">📅</div>
+            <div class="summary-content">
+                <div class="summary-value" data-testid="entries-week-value">{{ entries_this_week }}</div>
+                <div class="summary-label">Entries This Week</div>
+            </div>
+        </div>
+        
+        <div class="summary-card" data-testid="emotion-card">
+            <div class="summary-icon">😊</div>
+            <div class="summary-content">
+                <div class="summary-value" data-testid="emotion-value">{{ most_common_emotion }}</div>
+                <div class="summary-label">Most Common Emotion</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Existing dashboard buttons -->
     <div class="dashboard-buttons">
         <a href="{% url 'theme_selector' %}" class="dashboard-button" id="create-journal-btn" data-testid="create-journal-btn">
             <span class="button-text">Create New Journal</span>

@@ -15,8 +15,9 @@ from .forms import CustomUserCreationForm, CustomAuthenticationForm
 import requests
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.db import models
+from django.db.models import Count
 from django.utils.text import slugify
 
 
@@ -1534,3 +1535,37 @@ def download_analytics_csv(request):
 def analytics_dashboard(request):
     """Render the analytics dashboard page."""
     return render(request, 'analytics_dashboard.html')
+
+
+@login_required
+def home_view(request):
+    """Home view for authenticated users with summary statistics."""
+    # Calculate total entries
+    total_entries = JournalEntry.objects.filter(user=request.user).count()
+    
+    # Calculate entries this week (last 7 days)
+    week_ago = timezone.now() - timedelta(days=7)
+    entries_this_week = JournalEntry.objects.filter(
+        user=request.user,
+        created_at__gte=week_ago
+    ).count()
+    
+    # Calculate most common emotion
+    emotion_counts = JournalEntry.objects.filter(
+        user=request.user
+    ).values('primary_emotion').annotate(
+        count=Count('primary_emotion')
+    ).order_by('-count').first()
+    
+    most_common_emotion = emotion_counts['primary_emotion'] if emotion_counts is not None else 'neutral'
+    
+    # Format emotion for display (capitalize first letter)
+    most_common_emotion_display = most_common_emotion.capitalize()
+    
+    context = {
+        'total_entries': total_entries,
+        'entries_this_week': entries_this_week,
+        'most_common_emotion': most_common_emotion_display,
+    }
+    
+    return render(request, 'home.html', context)
