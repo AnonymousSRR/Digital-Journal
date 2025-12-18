@@ -10,6 +10,8 @@ from django.views.generic import CreateView, FormView
 from django.urls import reverse_lazy
 from django.contrib.auth.views import LoginView
 from django.utils import timezone
+from django.views.decorators.http import require_http_methods
+from django.db import transaction
 from .models import CustomUser, Theme, JournalEntry, Tag
 from .forms import CustomUserCreationForm, CustomAuthenticationForm
 from authentication.services import AnalyticsService
@@ -27,10 +29,13 @@ def my_journals_view(request):
     """
     View for displaying all journal entries for the current user.
     """
+    # Get highlight parameter for newly added entries
+    highlight_id = request.GET.get('highlight')
+    
     # Get all journal entries for the current user
     journal_entries = JournalEntry.objects.filter(user=request.user)
     
-    # Handle visibility filter
+    # Handle visibility filter (default to 'all' when highlight is present)
     visibility_filter = request.GET.get('visibility', 'all')
     if visibility_filter == 'private':
         journal_entries = journal_entries.filter(visibility='private')
@@ -40,7 +45,7 @@ def my_journals_view(request):
     
     # Handle tag filter
     selected_tag = request.GET.get('tag')
-    if selected_tag:
+    if selected_tag and not highlight_id:
         journal_entries = journal_entries.filter(tags__slug=selected_tag)
     
     # Handle search functionality
@@ -70,6 +75,7 @@ def my_journals_view(request):
         'visibility_filter': visibility_filter,
         'tags': user_tags,
         'selected_tag': selected_tag,
+        'highlight_id': int(highlight_id) if highlight_id and highlight_id.isdigit() else None,
     })
 
 @login_required
@@ -1575,3 +1581,66 @@ def home_view(request):
     }
     
     return render(request, 'home.html', context)
+
+
+def _get_quick_add_theme():
+    """
+    Helper to get or create a default theme for quick-add entries.
+    Returns a Theme object with name 'Quick Add'.
+    """
+    with transaction.atomic():
+        theme, created = Theme.objects.get_or_create(
+            name='Quick Add',
+            defaults={'description': 'Default theme for quick-add journal entries'}
+        )
+    return theme
+
+
+@login_required
+@require_http_methods(["POST"])
+@transaction.atomic
+def quick_add_entry(request):
+    """
+    API endpoint to quickly create a journal entry with minimal fields.
+    Expects JSON payload with 'title' and 'body'.
+    Returns JSON with entry details on success.
+    """
+    try:
+        payload = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"success": False, "errors": {"json": "Invalid JSON payload."}}, 
+            status=400
+        )
+    
+    title = payload.get("title", "").strip()
+    body = payload.get("body", "").strip()
+    
+    if not title or not body:
+        return JsonResponse(
+            {"success": False, "errors": {"title": "Title and body are required."}}, 
+            status=400
+        )
+    
+    # Get default theme for quick-add entries
+    theme = _get_quick_add_theme()
+    
+    # Create the journal entry
+    entry = JournalEntry.objects.create(
+        user=request.user,
+        title=title,
+        prompt="Quick add entry",
+        answer=body,
+        theme=theme,
+        writing_time=0,
+        visibility="private",
+    )
+    
+    return JsonResponse({
+        "success": True,
+        "entry": {
+            "id": entry.id,
+            "title": entry.title,
+            "created_at": entry.created_at.isoformat()
+        }
+    })

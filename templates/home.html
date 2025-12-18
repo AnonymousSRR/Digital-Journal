@@ -54,15 +54,150 @@
     </div>
 </div>
 
+<!-- Quick Add Floating Action Button -->
+<button id="quick-add-btn" class="fab" aria-label="Quick add journal" data-testid="quick-add-btn">
+    <span class="fab-icon">+</span>
+</button>
+
+<!-- Quick Add Modal -->
+<div id="quickAddModal" class="quick-modal" hidden>
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <h3>Quick Add Journal Entry</h3>
+        <form id="quickAddForm">
+            {% csrf_token %}
+            <div class="form-group">
+                <input 
+                    type="text" 
+                    id="quick-title" 
+                    name="title" 
+                    placeholder="Entry Title" 
+                    required
+                    data-testid="quick-add-title"
+                >
+            </div>
+            <div class="form-group">
+                <textarea 
+                    id="quick-body" 
+                    name="body" 
+                    placeholder="Write something..." 
+                    rows="6" 
+                    required
+                    data-testid="quick-add-body"
+                ></textarea>
+            </div>
+            <div class="error-message" id="quick-error" hidden></div>
+            <div class="modal-actions">
+                <button type="submit" class="btn-primary" data-testid="quick-add-submit">
+                    <span class="btn-text">Save</span>
+                    <span class="btn-loading" hidden>Saving...</span>
+                </button>
+                <button type="button" id="quickAddCancel" class="btn-secondary" data-testid="quick-add-cancel">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const createJournalBtn = document.getElementById('create-journal-btn');
+    const quickAddBtn = document.getElementById('quick-add-btn');
+    const quickAddModal = document.getElementById('quickAddModal');
+    const quickAddForm = document.getElementById('quickAddForm');
+    const quickAddCancel = document.getElementById('quickAddCancel');
+    const errorDiv = document.getElementById('quick-error');
     
+    // Start timer for regular journal creation
     createJournalBtn.addEventListener('click', function() {
-        // Start the timer when user clicks Create New Journal
         const startTime = Date.now();
         sessionStorage.setItem('journalWritingStartTime', startTime.toString());
         console.log('Timer started at:', new Date(startTime));
+    });
+    
+    // Open quick add modal
+    quickAddBtn.addEventListener('click', function() {
+        quickAddModal.removeAttribute('hidden');
+        document.getElementById('quick-title').focus();
+    });
+    
+    // Close quick add modal
+    function closeModal() {
+        quickAddModal.setAttribute('hidden', '');
+        quickAddForm.reset();
+        errorDiv.setAttribute('hidden', '');
+        errorDiv.textContent = '';
+    }
+    
+    quickAddCancel.addEventListener('click', closeModal);
+    
+    // Close on overlay click
+    quickAddModal.querySelector('.modal-overlay').addEventListener('click', closeModal);
+    
+    // Handle form submission
+    quickAddForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const title = document.getElementById('quick-title').value.trim();
+        const body = document.getElementById('quick-body').value.trim();
+        const submitBtn = quickAddForm.querySelector('[type="submit"]');
+        const btnText = submitBtn.querySelector('.btn-text');
+        const btnLoading = submitBtn.querySelector('.btn-loading');
+        
+        // Clear previous errors
+        errorDiv.setAttribute('hidden', '');
+        errorDiv.textContent = '';
+        
+        // Disable button and show loading
+        submitBtn.disabled = true;
+        btnText.setAttribute('hidden', '');
+        btnLoading.removeAttribute('hidden');
+        
+        try {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const response = await fetch('/home/api/journals/quick-add/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ title, body })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                // Redirect to My Journals with highlight
+                window.location.href = `/home/my-journals/?highlight=${data.entry.id}`;
+            } else {
+                // Show error
+                const errorMsg = data.errors?.title || 'Failed to create entry. Please try again.';
+                errorDiv.textContent = errorMsg;
+                errorDiv.removeAttribute('hidden');
+                
+                // Re-enable button
+                submitBtn.disabled = false;
+                btnText.removeAttribute('hidden');
+                btnLoading.setAttribute('hidden', '');
+            }
+        } catch (error) {
+            console.error('Error creating quick entry:', error);
+            errorDiv.textContent = 'Network error. Please check your connection and try again.';
+            errorDiv.removeAttribute('hidden');
+            
+            // Re-enable button
+            submitBtn.disabled = false;
+            btnText.removeAttribute('hidden');
+            btnLoading.setAttribute('hidden', '');
+        }
+    });
+    
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !quickAddModal.hasAttribute('hidden')) {
+            closeModal();
+        }
     });
 });
 </script>
