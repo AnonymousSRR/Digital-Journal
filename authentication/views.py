@@ -12,6 +12,7 @@ from django.contrib.auth.views import LoginView
 from django.utils import timezone
 from .models import CustomUser, Theme, JournalEntry, Tag
 from .forms import CustomUserCreationForm, CustomAuthenticationForm
+from authentication.services import AnalyticsService
 import requests
 import json
 import time
@@ -1562,10 +1563,15 @@ def home_view(request):
     # Format emotion for display (capitalize first letter)
     most_common_emotion_display = most_common_emotion.capitalize()
     
+    # Calculate daily streak using existing AnalyticsService
+    streak_data = AnalyticsService.get_writing_streaks(request.user)
+    current_streak = streak_data['current_streak']
+    
     context = {
         'total_entries': total_entries,
         'entries_this_week': entries_this_week,
         'most_common_emotion': most_common_emotion_display,
+        'current_streak': current_streak,
     }
     
     return render(request, 'home.html', context)

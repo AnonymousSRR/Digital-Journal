@@ -1464,7 +1464,32 @@ body {
     font-weight: 500;
 }
 
+/* Daily Streak Card - Special styling */
+.streak-card {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.streak-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 10px 20px rgba(245, 87, 108, 0.3);
+}
+
+.streak-card .summary-icon {
+    animation: flicker 2s infinite;
+}
+
+@keyframes flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
 /* Responsive Design for Summary Widget */
+@media (max-width: 1024px) {
+    .summary-widget {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 @media (max-width: 768px) {
     .summary-widget {
         flex-direction: column;
