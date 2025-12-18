@@ -35,4 +35,14 @@ urlpatterns = [
     path('api/reminders/<int:reminder_id>/update/', views.api_update_reminder, name='api_update_reminder'),
     path('api/reminders/<int:reminder_id>/delete/', views.api_delete_reminder, name='api_delete_reminder'),
     path('api/reminders/upcoming/', views.api_upcoming_reminders, name='api_upcoming_reminders'),
+    
+    # Analytics URLs
+    path('analytics/', views.analytics_dashboard, name='analytics_dashboard'),
+    path('api/analytics/streaks/', views.api_writing_streaks, name='api_writing_streaks'),
+    path('api/analytics/word-count-stats/', views.api_word_count_stats, name='api_word_count_stats'),
+    path('api/analytics/mood-distribution/', views.api_mood_distribution, name='api_mood_distribution'),
+    path('api/analytics/top-themes/', views.api_top_themes, name='api_top_themes'),
+    path('api/analytics/word-count-trend/', views.api_word_count_trend, name='api_word_count_trend'),
+    path('api/analytics/mood-trend/', views.api_mood_trend, name='api_mood_trend'),
+    path('api/analytics/export-csv/', views.download_analytics_csv, name='download_analytics_csv'),
 ] 

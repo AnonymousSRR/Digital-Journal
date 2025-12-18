@@ -7,7 +7,7 @@ CODE_REVIEW_DIR="Code Reviewer Results"
 
 log() { echo "[$(date '+%H:%M:%S')] $1"; }
 
-log "Starting Coder → Plan-Reviewer → Auto-Fix → Code-Reviewer → Code-Fix pipeline"
+log "Starting Coder → Plan-Reviewer → Auto-Fix → Code-Reviewer → Code-Fix → PR-Maker pipeline"
 log "Looking for latest plan in: $PLAN_DIR"
 
 # ----------------------------
@@ -188,4 +188,30 @@ else
   log "Code review passed — no code-level fixes required"
 fi
 
-log "Pipeline complete: Coder → Plan-Reviewer → Auto-Fix → Code-Reviewer → Code-Fix"
+# ----------------------------
+# STEP 6: PR-MAKER
+# ----------------------------
+log "Step 6: Running PR-Maker agent (stage + commit + push + PR on current branch)"
+
+# Fresh snapshot so PR-Maker sees final state after all fixes
+FINAL_GIT_SNAPSHOT="$(git status --porcelain || true)"
+
+copilot --agent="PR-Maker" \
+  --allow-all-tools \
+  --allow-all-paths \
+  --add-dir "$REPO_DIR" \
+  --prompt "You are the PR-Maker agent.
+
+TASK:
+- Take ALL current uncommitted changes (tracked + untracked), stage safely, create ONE commit on the CURRENT branch (do not create a new branch), push, and create a GitHub Pull Request.
+- If there are NO changes, do NOT create a PR.
+
+CONTEXT:
+- Latest implementation plan file: $LATEST_PLAN
+- Latest plan review report: $PLAN_REVIEW_FILE
+- Latest code review report: $CODE_REVIEW_FILE
+
+GIT STATUS SNAPSHOT (git status --porcelain):
+$FINAL_GIT_SNAPSHOT"
+
+log "Pipeline complete: Coder → Plan-Reviewer → Auto-Fix → Code-Reviewer → Code-Fix → PR-Maker"

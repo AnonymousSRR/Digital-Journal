@@ -9,6 +9,7 @@ from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.views.generic import CreateView, FormView
 from django.urls import reverse_lazy
 from django.contrib.auth.views import LoginView
+from django.utils import timezone
 from .models import CustomUser, Theme, JournalEntry, Tag
 from .forms import CustomUserCreationForm, CustomAuthenticationForm
 import requests
@@ -1386,3 +1387,150 @@ def api_upcoming_reminders(request):
         'success': True,
         'reminders': [serialize_reminder(r) for r in reminders]
     })
+
+
+# Analytics API Endpoints
+
+@login_required
+def api_writing_streaks(request):
+    """Get current and longest writing streaks."""
+    from .services import AnalyticsService
+    
+    try:
+        days = min(int(request.GET.get('days', 365)), 3650)
+    except (ValueError, TypeError):
+        days = 365
+    
+    streaks = AnalyticsService.get_writing_streaks(request.user, days_lookback=days)
+    return JsonResponse(streaks)
+
+
+@login_required
+def api_word_count_stats(request):
+    """Get word count statistics."""
+    from .services import AnalyticsService
+    
+    try:
+        days = min(int(request.GET.get('days', 365)), 3650)
+    except (ValueError, TypeError):
+        days = 365
+    
+    stats = AnalyticsService.get_word_count_stats(request.user, days_lookback=days)
+    return JsonResponse(stats)
+
+
+@login_required
+def api_mood_distribution(request):
+    """Get emotion distribution across entries."""
+    from .services import AnalyticsService
+    
+    try:
+        days = min(int(request.GET.get('days', 365)), 3650)
+    except (ValueError, TypeError):
+        days = 365
+    
+    distribution = AnalyticsService.get_mood_distribution(request.user, days_lookback=days)
+    return JsonResponse(distribution)
+
+
+@login_required
+def api_top_themes(request):
+    """Get most frequently used themes."""
+    from .services import AnalyticsService
+    
+    try:
+        days = min(int(request.GET.get('days', 365)), 3650)
+    except (ValueError, TypeError):
+        days = 365
+    
+    try:
+        limit = max(1, min(int(request.GET.get('limit', 5)), 50))
+    except (ValueError, TypeError):
+        limit = 5
+    
+    themes = AnalyticsService.get_top_themes(request.user, days_lookback=days, limit=limit)
+    return JsonResponse({'themes': themes})
+
+
+@login_required
+def api_word_count_trend(request):
+    """
+    Get daily/weekly word count trends.
+    
+    Query params:
+    - granularity: 'daily' or 'weekly' (default: 'daily')
+    - days: lookback period (default: 90)
+    """
+    from .services import AnalyticsService
+    
+    granularity = request.GET.get('granularity', 'daily')
+    if granularity not in ['daily', 'weekly']:
+        granularity = 'daily'
+    
+    try:
+        days = min(int(request.GET.get('days', 90)), 3650)
+    except (ValueError, TypeError):
+        days = 90
+    
+    trend = AnalyticsService.get_word_count_trend(
+        request.user, 
+        granularity=granularity, 
+        days_lookback=days
+    )
+    return JsonResponse({'trend': trend})
+
+
+@login_required
+def api_mood_trend(request):
+    """Get mood distribution over time in time-series format."""
+    from .services import AnalyticsService
+    
+    granularity = request.GET.get('granularity', 'weekly')
+    if granularity not in ['daily', 'weekly']:
+        granularity = 'weekly'
+    
+    try:
+        days = min(int(request.GET.get('days', 90)), 3650)
+    except (ValueError, TypeError):
+        days = 90
+    
+    trend = AnalyticsService.get_mood_trend(
+        request.user,
+        granularity=granularity,
+        days_lookback=days
+    )
+    return JsonResponse({'trend': trend})
+
+
+@login_required
+def download_analytics_csv(request):
+    """Download analytics data as CSV."""
+    from django.http import HttpResponse
+    from .services import AnalyticsService
+    
+    export_type = request.GET.get('type', 'full')
+    if export_type not in ['full', 'summary', 'mood_trends']:
+        return JsonResponse({'error': 'Invalid export type'}, status=400)
+    
+    try:
+        days = min(int(request.GET.get('days', 365)), 3650)
+    except (ValueError, TypeError):
+        days = 365
+    
+    csv_data = AnalyticsService.export_analytics_csv(
+        request.user,
+        export_type=export_type,
+        days_lookback=days
+    )
+    
+    response = HttpResponse(csv_data, content_type='text/csv')
+    filename = f"analytics_{export_type}_{timezone.now().strftime('%Y%m%d')}.csv"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    return response
+
+
+@login_required
+def analytics_dashboard(request):
+    """Render the analytics dashboard page."""
+    return render(request, 'analytics_dashboard.html')

@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Analytics Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/analytics.css' %}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-Q3Dck0VkxhcGJlPXr/sFkDcdwKlr+L5qv+rULY0VDdDmyL5b1b2n1J/cPWAGWVVz" crossorigin="anonymous"></script>
+{% endblock %}
+
+{% block content %}
+<div class="analytics-container">
+    <h1>Journal Analytics Dashboard</h1>
+    
+    <div class="analytics-filters">
+        <label for="days-filter">Time Period:</label>
+        <select id="days-filter" class="filter-select">
+            <option value="30">Last 30 Days</option>
+            <option value="90" selected>Last 90 Days</option>
+            <option value="180">Last 6 Months</option>
+            <option value="365">Last Year</option>
+        </select>
+        
+        <button id="export-btn" class="export-button">Export as CSV</button>
+    </div>
+    
+    <!-- Streaks Section -->
+    <div class="analytics-section streaks-section">
+        <h2>Writing Streaks</h2>
+        <div class="streak-cards">
+            <div class="streak-card">
+                <div class="streak-label">Current Streak</div>
+                <div class="streak-value" id="current-streak">--</div>
+                <div class="streak-subtext">days</div>
+            </div>
+            <div class="streak-card">
+                <div class="streak-label">Longest Streak</div>
+                <div class="streak-value" id="longest-streak">--</div>
+                <div class="streak-subtext">days</div>
+            </div>
+            <div class="streak-card">
+                <div class="streak-label">Last Entry</div>
+                <div class="streak-value" id="last-entry-date">--</div>
+                <div class="streak-subtext">date</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Word Count Stats Section -->
+    <div class="analytics-section stats-section">
+        <h2>Writing Statistics</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Words</div>
+                <div class="stat-value" id="total-words">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Avg Words/Entry</div>
+                <div class="stat-value" id="avg-words">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Longest Entry</div>
+                <div class="stat-value" id="max-words">0</div>
+                <div class="stat-subtext">words</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Shortest Entry</div>
+                <div class="stat-value" id="min-words">0</div>
+                <div class="stat-subtext">words</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Word Count Trend Chart -->
+    <div class="analytics-section chart-section">
+        <h2>Word Count Trend</h2>
+        <div class="chart-controls">
+            <label>Granularity:</label>
+            <select id="word-trend-granularity" class="granularity-select">
+                <option value="daily">Daily</option>
+                <option value="weekly" selected>Weekly</option>
+            </select>
+        </div>
+        <canvas id="wordCountChart" class="chart-canvas"></canvas>
+    </div>
+    
+    <!-- Mood Distribution Chart -->
+    <div class="analytics-section chart-section">
+        <h2>Mood Distribution</h2>
+        <canvas id="moodDistributionChart" class="chart-canvas"></canvas>
+    </div>
+    
+    <!-- Mood Trend Chart -->
+    <div class="analytics-section chart-section">
+        <h2>Mood Trends Over Time</h2>
+        <div class="chart-controls">
+            <label>Granularity:</label>
+            <select id="mood-trend-granularity" class="granularity-select">
+                <option value="daily">Daily</option>
+                <option value="weekly" selected>Weekly</option>
+            </select>
+        </div>
+        <canvas id="moodTrendChart" class="chart-canvas"></canvas>
+    </div>
+    
+    <!-- Top Themes Section -->
+    <div class="analytics-section themes-section">
+        <h2>Top Themes</h2>
+        <div class="themes-list" id="themes-list">
+            <!-- Populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/analytics.js' %}"></script>
+{% endblock %}
