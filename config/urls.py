@@ -53,6 +53,7 @@ urlpatterns = [
     path('home/api/reminders/<int:reminder_id>/update/', views.api_update_reminder, name='api_update_reminder'),
     path('home/api/reminders/<int:reminder_id>/delete/', views.api_delete_reminder, name='api_delete_reminder'),
     path('home/api/reminders/create/', views.api_create_reminder, name='api_create_reminder'),
+    path('home/api/journals/quick-add/', views.quick_add_entry, name='quick_add_entry'),
     path('login/', include('authentication.urls')),
 ]
 

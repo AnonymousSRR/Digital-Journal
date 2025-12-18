@@ -134,7 +134,7 @@
             <h2 class="bookmarked-title">📌 Bookmarked Entries</h2>
             <div class="bookmarked-grid">
                 {% for entry in bookmarked_entries %}
-                    <div class="journal-card bookmarked-card" data-entry-id="{{ entry.id }}" onclick="openJournalModal({{ entry.id }})">
+                    <div class="journal-card bookmarked-card {% if highlight_id == entry.id %}newly-added{% endif %}" data-entry-id="{{ entry.id }}" onclick="openJournalModal({{ entry.id }})">
                         <div class="journal-card-header">
                             <div class="journal-date">{{ entry.created_at|date:"M d, Y" }}</div>
                             <div class="journal-badges">
@@ -209,7 +209,7 @@
             <h2 class="other-entries-title">📝 Other Entries</h2>
             <div class="journals-grid">
                 {% for entry in regular_entries %}
-                    <div class="journal-card" data-entry-id="{{ entry.id }}" onclick="openJournalModal({{ entry.id }})">
+                    <div class="journal-card {% if highlight_id == entry.id %}newly-added{% endif %}" data-entry-id="{{ entry.id }}" onclick="openJournalModal({{ entry.id }})">
                         <div class="journal-card-header">
                             <div class="journal-date">{{ entry.created_at|date:"M d, Y" }}</div>
                             <div class="journal-badges">
@@ -368,6 +368,22 @@ document.addEventListener('DOMContentLoaded', function() {
             this.form.submit();
         }, 500);
     });
+    
+    // Scroll to and highlight newly added entry
+    const highlightedCard = document.querySelector('.newly-added');
+    if (highlightedCard) {
+        setTimeout(() => {
+            highlightedCard.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+        }, 300);
+        
+        // Remove highlight class after animation
+        setTimeout(() => {
+            highlightedCard.classList.remove('newly-added');
+        }, 3000);
+    }
     
     // Load upcoming reminders
     loadUpcomingReminders();
