@@ -20,6 +20,9 @@ class FABAccessibilityTests(TestCase):
             first_name='Test',
             last_name='User'
         )
+        # Enable Quick Add FAB for accessibility tests
+        self.user.show_quick_add_fab = True
+        self.user.save()
         Theme.objects.get_or_create(
             name='Quick Add',
             defaults={'description': 'Default theme for quick-add journal entries'}
@@ -94,6 +97,9 @@ class FABVisualHierarchyTests(TestCase):
             first_name='Test',
             last_name='User'
         )
+        # Enable Quick Add FAB for visual hierarchy tests
+        self.user.show_quick_add_fab = True
+        self.user.save()
         Theme.objects.get_or_create(
             name='Quick Add',
             defaults={'description': 'Default theme for quick-add journal entries'}

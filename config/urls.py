@@ -55,6 +55,7 @@ urlpatterns = [
     path('home/api/reminders/create/', views.api_create_reminder, name='api_create_reminder'),
     path('home/api/journals/quick-add/', views.quick_add_entry, name='quick_add_entry'),
     path('home/api/analytics/track/', views.track_analytics_event, name='track_analytics_event'),
+    path('home/api/preferences/quick-add/', views.toggle_quick_add_preference, name='toggle_quick_add_preference'),
     path('login/', include('authentication.urls')),
 ]
 

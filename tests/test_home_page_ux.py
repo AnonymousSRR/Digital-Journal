@@ -20,6 +20,10 @@ class QuickAddModalAutoOpenTests(TestCase):
             first_name='Test',
             last_name='User'
         )
+        # Enable FAB for testing modal behavior
+        self.user.show_quick_add_fab = True
+        self.user.save()
+        
         # Create a test theme for quick-add
         Theme.objects.get_or_create(
             name='Quick Add',
@@ -69,13 +73,12 @@ class QuickAddModalAutoOpenTests(TestCase):
         # Act: Navigate to home page with quick-add URL parameter
         response = self.client.get(reverse('home') + '?quick-add=open')
         
-        # Assert: Modal is still hidden (JavaScript will handle removal)
+        # Assert: Modal is still hidden (Phase 2: simplified code, no URL parameter handling needed)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
         self.assertIn('id="quickAddModal"', content)
         self.assertIn('<div id="quickAddModal" class="quick-modal" hidden>', content)
-        # Verify the JavaScript includes code to remove the parameter
-        self.assertIn('Removed auto-open behavior from URL parameter', content)
+        # The simplified code in Phase 2 removed URL parameter handling
     
     def test_fab_button_exists_on_home_page(self):
         """Verify FAB button exists and is properly configured"""
@@ -100,8 +103,7 @@ class QuickAddModalAutoOpenTests(TestCase):
         # Act: Navigate to home page
         response = self.client.get(reverse('home'))
         
-        # Assert: JavaScript includes verification logic
+        # Assert: JavaScript includes force-hidden logic (Phase 2: simplified)
         content = response.content.decode()
-        self.assertIn('CRITICAL: Verify modal starts hidden', content)
-        self.assertIn("if (!quickAddModal.hasAttribute('hidden'))", content)
+        self.assertIn('CRITICAL: Force modal to be hidden on page load', content)
         self.assertIn("quickAddModal.setAttribute('hidden', '')", content)

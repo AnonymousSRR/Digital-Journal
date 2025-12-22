@@ -66,7 +66,7 @@ class CustomUser(AbstractUser):
     date_joined = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     show_quick_add_fab = models.BooleanField(
-        default=True,
+        default=False,
         help_text="Show the Quick Add FAB button on the home page"
     )
     

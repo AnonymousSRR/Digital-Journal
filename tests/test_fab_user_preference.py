@@ -71,8 +71,8 @@ class FABUserPreferenceTests(TestCase):
         html = response.content.decode()
         self.assertNotIn('id="quickAddModal"', html)
     
-    def test_default_preference_is_enabled(self):
-        """Verify new users have FAB enabled by default"""
+    def test_default_preference_is_disabled(self):
+        """Verify new users have FAB disabled by default (Phase 3 change)"""
         # Arrange: Create a new user
         new_user = CustomUser.objects.create_user(
             email='newuser@example.com',
@@ -81,8 +81,8 @@ class FABUserPreferenceTests(TestCase):
             last_name='User'
         )
         
-        # Assert: Default preference is True
-        self.assertTrue(new_user.show_quick_add_fab)
+        # Assert: Default preference is False
+        self.assertFalse(new_user.show_quick_add_fab)
     
     def test_preference_persists_across_sessions(self):
         """Verify preference persists across login sessions"""

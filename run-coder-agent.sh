@@ -7,7 +7,7 @@ CODE_REVIEW_DIR="Code Reviewer Results"
 
 log() { echo "[$(date '+%H:%M:%S')] $1"; }
 
-log "Starting Coder → Plan-Reviewer(loop) → Code-Reviewer → Code-Fix → PR-Maker pipeline"
+log "Starting Coder → Plan-Reviewer(loop) → Code-Reviewer(loop) → PR-Maker pipeline"
 log "Looking for latest plan in: $PLAN_DIR"
 
 # ----------------------------
@@ -63,7 +63,6 @@ PLAN_REVIEW_FILE=""
 for i in 1 2 3; do
   log "Plan review iteration: $i/3"
 
-  # Unique plan review file per iteration (prevents overwriting + keeps history)
   PLAN_REVIEW_FILE="$REVIEW_DIR/plan_review_${PLAN_STEM}_iter${i}.md"
   PLAN_GIT_SNAPSHOT="$(git status --porcelain || true)"
 
@@ -94,10 +93,10 @@ $(cat "$LATEST_PLAN")"
   PLAN_MATCH="$(awk '
     BEGIN { IGNORECASE=1 }
     /Overall Match/ {
-      if ($0 ~ /Yes/) { print "yes"; exit }
-      if ($0 ~ /No/)  { print "no";  exit }
+      if ($0 ~ /: *Yes|Yes *$/) { print "yes"; exit }
+      if ($0 ~ /: *No|No *$/)  { print "no";  exit }
     }
-  ' "$PLAN_REVIEW_FILE" || true)"
+  ' "$PLAN_REVIEW_FILE" | head -n 1 || true)"
 
   if [[ -z "${PLAN_MATCH:-}" ]]; then
     echo "[ERROR] Could not parse Overall Match from: $PLAN_REVIEW_FILE"
@@ -128,81 +127,100 @@ $(cat "$LATEST_PLAN")
 
 LATEST PLAN REVIEW REPORT:
 $(cat "$PLAN_REVIEW_FILE")"
-
     log "Coder fixes applied for iteration $i"
   else
-    log "Reached max iterations (3). Proceeding to Code-Reviewer even though plan match is still No."
+    log "Reached max plan iterations (3). Proceeding to Code-Reviewer loop."
   fi
 done
 
 log "Plan loop complete. Latest plan review report: $PLAN_REVIEW_FILE"
 
 # ----------------------------
-# STEP 4: CODE REVIEWER
+# STEP 4 + 5: CODE-REVIEWER <=> CODER LOOP (max 3)
 # ----------------------------
-log "Step 4: Running Code-Reviewer agent"
+log "Step 4: Running Code-Reviewer <=> Coder loop (max 3 iterations)"
 
-TS="$(date '+%Y-%m-%d_%H%M%S')"
-CODE_REVIEW_FILE="$CODE_REVIEW_DIR/code_review_${TS}.md"
-CODE_GIT_SNAPSHOT="$(git status --porcelain || true)"
+CODE_MATCH="no"
+CODE_REVIEW_FILE=""
 
-copilot --agent="Code-Reviewer" \
-  --allow-all-tools \
-  --allow-all-paths \
-  --add-dir "$REPO_DIR" \
-  --prompt "You are the Code-Reviewer agent.
+for j in 1 2 3; do
+  log "Code review iteration: $j/3"
 
-TASK:
-1) Review ONLY current UNCOMMITTED changes.
-2) Restrict analysis to changed files and lines.
-3) Create a markdown report at:
-   $CODE_REVIEW_FILE
-4) Include Overall Match: Yes/No
+  TS="$(date '+%Y-%m-%d_%H%M%S')"
+  CODE_REVIEW_FILE="$CODE_REVIEW_DIR/code_review_${TS}_iter${j}.md"
+  CODE_GIT_SNAPSHOT="$(git status --porcelain || true)"
 
-GIT STATUS SNAPSHOT:
-$CODE_GIT_SNAPSHOT"
-
-if [[ ! -f "$CODE_REVIEW_FILE" ]]; then
-  echo "[ERROR] Code review report not created: $CODE_REVIEW_FILE"
-  exit 1
-fi
-
-log "Code review completed"
-
-# ----------------------------
-# STEP 5: AUTO-FIX BASED ON CODE REVIEW
-# ----------------------------
-log "Step 5: Evaluating Code Review result"
-
-CODE_MATCH="$(awk '
-  BEGIN { IGNORECASE=1 }
-  /Overall Match/ {
-    if ($0 ~ /Yes/) { print "yes"; exit }
-    if ($0 ~ /No/)  { print "no";  exit }
-  }
-' "$CODE_REVIEW_FILE" || true)"
-
-if [[ "$CODE_MATCH" = "no" ]]; then
-  log "Code review failed — applying fixes via Coder"
-
-  copilot --agent=Coder \
+  copilot --agent="Code-Reviewer" \
     --allow-all-tools \
     --allow-all-paths \
     --add-dir "$REPO_DIR" \
-    --prompt "You are the Coder agent.
+    --prompt "You are the Code-Reviewer agent.
+
+TASK:
+1) Review ONLY current UNCOMMITTED changes (modified + untracked).
+2) Restrict analysis to changed files and changed lines (use git diff / git status).
+3) Create a SINGLE markdown report file at:
+   $CODE_REVIEW_FILE
+4) The report MUST include: **Overall Match**: Yes/No
+   - If any Critical or High issue exists → Overall Match: No
+   - Else → Overall Match: Yes
+
+INPUTS:
+- Git Status Snapshot (git status --porcelain):
+$CODE_GIT_SNAPSHOT
+
+NOTES:
+- Do NOT ask questions.
+- Do NOT refactor code in this run.
+- You MUST create the file at the exact path above."
+
+  if [[ ! -f "$CODE_REVIEW_FILE" ]]; then
+    echo "[ERROR] Code review report not created: $CODE_REVIEW_FILE"
+    exit 1
+  fi
+
+  CODE_MATCH="$(awk '
+    BEGIN { IGNORECASE=1 }
+    /Overall Match/ {
+      if ($0 ~ /: *Yes|Yes *$/) { print "yes"; exit }
+      if ($0 ~ /: *No|No *$/)  { print "no";  exit }
+    }
+  ' "$CODE_REVIEW_FILE" | head -n 1 || true)"
+
+  if [[ -z "${CODE_MATCH:-}" ]]; then
+    echo "[ERROR] Could not parse Overall Match from: $CODE_REVIEW_FILE"
+    exit 1
+  fi
+
+  log "Code review result (iter $j): $CODE_MATCH"
+
+  if [[ "$CODE_MATCH" = "yes" ]]; then
+    log "Code review passed on iteration $j — exiting code loop."
+    break
+  fi
+
+  if [[ "$j" -lt 3 ]]; then
+    log "Code review is No — running Coder to apply fixes (iter $j)"
+    copilot --agent=Coder \
+      --allow-all-tools \
+      --allow-all-paths \
+      --add-dir "$REPO_DIR" \
+      --prompt "You are the Coder agent.
 
 GOAL:
-Fix ONLY the issues identified in the Code Review Report.
+Fix ONLY the issues identified in the latest Code Review Report.
 Do not refactor unrelated code.
 Do not add new features.
 
-CODE REVIEW REPORT:
+LATEST CODE REVIEW REPORT:
 $(cat "$CODE_REVIEW_FILE")"
+    log "Coder fixes applied for iteration $j"
+  else
+    log "Reached max code review iterations (3). Proceeding to PR-Maker."
+  fi
+done
 
-  log "Auto-fix based on code review finished"
-else
-  log "Code review passed — no code-level fixes required"
-fi
+log "Code loop complete. Latest code review report: $CODE_REVIEW_FILE"
 
 # ----------------------------
 # STEP 6: PR-MAKER
@@ -229,4 +247,4 @@ CONTEXT:
 GIT STATUS SNAPSHOT (git status --porcelain):
 $FINAL_GIT_SNAPSHOT"
 
-log "Pipeline complete: Coder → Plan-Reviewer(loop) → Code-Reviewer → Code-Fix → PR-Maker"
+log "Pipeline complete: Coder → Plan-Reviewer(loop) → Code-Reviewer(loop) → PR-Maker"

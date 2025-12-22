@@ -1678,3 +1678,32 @@ def track_analytics_event(request):
     except Exception as e:
         logger.error(f"Analytics event tracking error: {e}")
         return JsonResponse({'success': False, 'error': 'Failed to track event'}, status=500)
+
+
+@login_required
+@require_POST
+def toggle_quick_add_preference(request):
+    """API endpoint to enable/disable Quick Add FAB"""
+    try:
+        if request.content_type != 'application/json':
+            return JsonResponse({'success': False, 'error': 'Content-Type must be application/json'}, status=400)
+        
+        data = json.loads(request.body)
+        
+        if 'enabled' not in data:
+            return JsonResponse({'success': False, 'error': 'Missing required parameter: enabled'}, status=400)
+        
+        enabled = data.get('enabled')
+        if not isinstance(enabled, bool):
+            return JsonResponse({'success': False, 'error': 'Parameter "enabled" must be a boolean'}, status=400)
+        
+        request.user.show_quick_add_fab = enabled
+        request.user.save()
+        return JsonResponse({'success': True})
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+    except ValueError as e:
+        return JsonResponse({'success': False, 'error': 'Invalid value provided'}, status=400)
+    except Exception as e:
+        logger.exception('Unexpected error in toggle_quick_add_preference')
+        return JsonResponse({'success': False, 'error': 'An error occurred'}, status=500)

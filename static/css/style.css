@@ -134,6 +134,26 @@ body {
     padding: 0;
 }
 
+.welcome-message .feature-notice {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    color: #495057;
+    font-size: 0.95rem;
+}
+
+.welcome-message .enable-link {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.welcome-message .enable-link:hover {
+    text-decoration: underline;
+    color: #0056b3;
+}
+
 .dashboard-buttons {
     display: flex;
     gap: 2rem;
@@ -1575,9 +1595,17 @@ body {
     width: 100%;
     height: 100%;
     z-index: 1000;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
+}
+
+.quick-modal[hidden] {
+    display: none !important;
+}
+
+.quick-modal:not([hidden]) {
+    display: flex;
 }
 
 .modal-overlay {
