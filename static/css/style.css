@@ -1528,18 +1528,21 @@ body {
     position: fixed;
     bottom: 30px;
     right: 30px;
-    width: 60px;
-    height: 60px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
     border: none;
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 24px;
     transition: all 0.3s ease;
-    z-index: 100;
+    z-index: 50; /* Lower than modal (100) but above content */
+    pointer-events: auto;
 }
 
 .fab:hover {
@@ -1547,15 +1550,21 @@ body {
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
 }
 
+.fab:focus {
+    outline: 3px solid #667eea;
+    outline-offset: 2px;
+}
+
 .fab:active {
     transform: scale(0.95) rotate(90deg);
 }
 
 .fab-icon {
-    font-size: 32px;
+    font-size: 24px;
     color: white;
     line-height: 1;
     font-weight: 300;
+    pointer-events: none;
 }
 
 /* Quick Add Modal */
@@ -1698,12 +1707,13 @@ body {
     .fab {
         bottom: 20px;
         right: 20px;
-        width: 56px;
-        height: 56px;
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
     }
     
     .fab-icon {
-        font-size: 28px;
+        font-size: 20px;
     }
     
     .modal-content {

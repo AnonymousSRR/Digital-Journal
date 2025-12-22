@@ -65,6 +65,10 @@ class CustomUser(AbstractUser):
     )
     date_joined = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
+    show_quick_add_fab = models.BooleanField(
+        default=True,
+        help_text="Show the Quick Add FAB button on the home page"
+    )
     
     objects = CustomUserManager()
     
@@ -335,3 +339,23 @@ class Reminder(models.Model):
 
     def __str__(self):
         return f"Reminder<{self.id}> for entry {self.journal_entry_id}"
+
+
+class AnalyticsEvent(models.Model):
+    """
+    Track user interaction analytics for features like quick-add modal.
+    """
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='analytics_events')
+    event_type = models.CharField(max_length=100, help_text="Type of event (e.g., 'quick_add_fab_clicked')")
+    event_data = models.JSONField(default=dict, help_text="Additional event data")
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', 'event_type', '-timestamp']),
+            models.Index(fields=['event_type', '-timestamp']),
+        ]
+        ordering = ['-timestamp']
+    
+    def __str__(self):
+        return f"{self.event_type} by {self.user.email} at {self.timestamp}"

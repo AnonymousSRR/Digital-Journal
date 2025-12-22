@@ -55,8 +55,16 @@
 </div>
 
 <!-- Quick Add Floating Action Button -->
-<button id="quick-add-btn" class="fab" aria-label="Quick add journal" data-testid="quick-add-btn">
-    <span class="fab-icon">+</span>
+{% if show_quick_add_fab %}
+<button 
+    id="quick-add-btn" 
+    class="fab" 
+    aria-label="Quick add journal entry"
+    title="Quick add journal entry"
+    data-testid="quick-add-btn"
+    type="button"
+>
+    <span class="fab-icon" aria-hidden="true">+</span>
 </button>
 
 <!-- Quick Add Modal -->
@@ -99,15 +107,34 @@
         </form>
     </div>
 </div>
+{% endif %}
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const createJournalBtn = document.getElementById('create-journal-btn');
+    {% if show_quick_add_fab %}
     const quickAddBtn = document.getElementById('quick-add-btn');
     const quickAddModal = document.getElementById('quickAddModal');
     const quickAddForm = document.getElementById('quickAddForm');
     const quickAddCancel = document.getElementById('quickAddCancel');
     const errorDiv = document.getElementById('quick-error');
+    
+    // CRITICAL: Verify modal starts hidden
+    if (!quickAddModal.hasAttribute('hidden')) {
+        console.error('Quick-add modal should be hidden by default');
+        quickAddModal.setAttribute('hidden', '');
+    }
+    
+    // Remove any existing auto-open logic from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('quick-add') && urlParams.get('quick-add') === 'open') {
+        // Remove this behavior - modal should only open via FAB click
+        console.warn('Removed auto-open behavior from URL parameter');
+        // Remove the parameter from URL without reloading
+        urlParams.delete('quick-add');
+        const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+        window.history.replaceState({}, '', newUrl);
+    }
     
     // Start timer for regular journal creation
     createJournalBtn.addEventListener('click', function() {
@@ -116,11 +143,53 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Timer started at:', new Date(startTime));
     });
     
-    // Open quick add modal
-    quickAddBtn.addEventListener('click', function() {
+    // Analytics tracking
+    let modalOpenTime = null;
+    
+    // Track FAB clicks
+    quickAddBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        modalOpenTime = Date.now();
+        
+        // Send analytics event
+        fetch('/home/api/analytics/track/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                event: 'quick_add_fab_clicked',
+                timestamp: modalOpenTime,
+                page: 'home'
+            })
+        }).catch(err => console.warn('Analytics failed:', err));
+        
         quickAddModal.removeAttribute('hidden');
         document.getElementById('quick-title').focus();
     });
+    
+    // Track modal closes
+    function trackModalClose(closeReason) {
+        if (modalOpenTime) {
+            const duration = Date.now() - modalOpenTime;
+            fetch('/home/api/analytics/track/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    event: 'quick_add_modal_closed',
+                    duration: duration,
+                    close_reason: closeReason,
+                    timestamp: Date.now()
+                })
+            }).catch(err => console.warn('Analytics failed:', err));
+            
+            modalOpenTime = null;
+        }
+    }
     
     // Close quick add modal
     function closeModal() {
@@ -130,10 +199,16 @@ document.addEventListener('DOMContentLoaded', function() {
         errorDiv.textContent = '';
     }
     
-    quickAddCancel.addEventListener('click', closeModal);
+    quickAddCancel.addEventListener('click', function() {
+        trackModalClose('cancel_button');
+        closeModal();
+    });
     
     // Close on overlay click
-    quickAddModal.querySelector('.modal-overlay').addEventListener('click', closeModal);
+    quickAddModal.querySelector('.modal-overlay').addEventListener('click', function() {
+        trackModalClose('overlay_click');
+        closeModal();
+    });
     
     // Handle form submission
     quickAddForm.addEventListener('submit', async function(e) {
@@ -168,6 +243,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             
             if (response.ok && data.success) {
+                // Track successful submission
+                trackModalClose('form_submit');
+                
                 // Redirect to My Journals with highlight
                 window.location.href = `/home/my-journals/?highlight=${data.entry.id}`;
             } else {
@@ -199,6 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
             closeModal();
         }
     });
+    {% endif %}
 });
 </script>
 {% endblock %}

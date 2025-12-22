@@ -10,7 +10,7 @@ from django.views.generic import CreateView, FormView
 from django.urls import reverse_lazy
 from django.contrib.auth.views import LoginView
 from django.utils import timezone
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 from django.db import transaction
 from .models import CustomUser, Theme, JournalEntry, Tag
 from .forms import CustomUserCreationForm, CustomAuthenticationForm
@@ -22,6 +22,9 @@ from datetime import datetime, timedelta
 from django.db import models
 from django.db.models import Count
 from django.utils.text import slugify
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -1578,6 +1581,7 @@ def home_view(request):
         'entries_this_week': entries_this_week,
         'most_common_emotion': most_common_emotion_display,
         'current_streak': current_streak,
+        'show_quick_add_fab': request.user.show_quick_add_fab,
     }
     
     return render(request, 'home.html', context)
@@ -1644,3 +1648,33 @@ def quick_add_entry(request):
             "created_at": entry.created_at.isoformat()
         }
     })
+
+
+@login_required
+@require_POST
+def track_analytics_event(request):
+    """Track user interaction analytics."""
+    try:
+        payload = json.loads(request.body or "{}")
+        event = payload.get('event')
+        
+        if not event:
+            return JsonResponse({'success': False, 'error': 'Event type required'}, status=400)
+        
+        # Import here to avoid circular import with AnalyticsEvent model
+        from authentication.models import AnalyticsEvent
+        
+        # Log analytics event (timestamp auto-set by auto_now_add)
+        AnalyticsEvent.objects.create(
+            user=request.user,
+            event_type=event,
+            event_data=payload
+        )
+        
+        return JsonResponse({'success': True})
+    except json.JSONDecodeError as e:
+        logger.error(f"Analytics event JSON decode error: {e}")
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        logger.error(f"Analytics event tracking error: {e}")
+        return JsonResponse({'success': False, 'error': 'Failed to track event'}, status=500)

@@ -7,7 +7,7 @@ CODE_REVIEW_DIR="Code Reviewer Results"
 
 log() { echo "[$(date '+%H:%M:%S')] $1"; }
 
-log "Starting Coder → Plan-Reviewer → Auto-Fix → Code-Reviewer → Code-Fix → PR-Maker pipeline"
+log "Starting Coder → Plan-Reviewer(loop) → Code-Reviewer → Code-Fix → PR-Maker pipeline"
 log "Looking for latest plan in: $PLAN_DIR"
 
 # ----------------------------
@@ -49,22 +49,29 @@ $(cat "$LATEST_PLAN")"
 log "Coder finished initial implementation"
 
 # ----------------------------
-# STEP 2: PLAN REVIEWER
+# STEP 2 + 3: PLAN-REVIEWER <=> CODER LOOP (max 3)
 # ----------------------------
-log "Step 2: Running Plan-Reviewer agent"
+log "Step 2: Running Plan-Reviewer <=> Coder loop (max 3 iterations)"
 
 PLAN_BASENAME="$(basename "$LATEST_PLAN")"
 PLAN_STEM="${PLAN_BASENAME%.md}"
 PLAN_STEM="${PLAN_STEM#implementation_plan_}"
-PLAN_REVIEW_FILE="$REVIEW_DIR/plan_review_${PLAN_STEM}.md"
 
-PLAN_GIT_SNAPSHOT="$(git status --porcelain || true)"
+PLAN_MATCH="no"
+PLAN_REVIEW_FILE=""
 
-copilot --agent="Plan-Reviewer" \
-  --allow-all-tools \
-  --allow-all-paths \
-  --add-dir "$REPO_DIR" \
-  --prompt "You are the Plan-Reviewer agent.
+for i in 1 2 3; do
+  log "Plan review iteration: $i/3"
+
+  # Unique plan review file per iteration (prevents overwriting + keeps history)
+  PLAN_REVIEW_FILE="$REVIEW_DIR/plan_review_${PLAN_STEM}_iter${i}.md"
+  PLAN_GIT_SNAPSHOT="$(git status --porcelain || true)"
+
+  copilot --agent="Plan-Reviewer" \
+    --allow-all-tools \
+    --allow-all-paths \
+    --add-dir "$REPO_DIR" \
+    --prompt "You are the Plan-Reviewer agent.
 
 TASK:
 1) Use the implementation plan at: $LATEST_PLAN
@@ -79,47 +86,56 @@ $PLAN_GIT_SNAPSHOT
 IMPLEMENTATION PLAN:
 $(cat "$LATEST_PLAN")"
 
-if [[ ! -f "$PLAN_REVIEW_FILE" ]]; then
-  echo "[ERROR] Plan review report not created: $PLAN_REVIEW_FILE"
-  exit 1
-fi
+  if [[ ! -f "$PLAN_REVIEW_FILE" ]]; then
+    echo "[ERROR] Plan review report not created: $PLAN_REVIEW_FILE"
+    exit 1
+  fi
 
-log "Plan review completed"
+  PLAN_MATCH="$(awk '
+    BEGIN { IGNORECASE=1 }
+    /Overall Match/ {
+      if ($0 ~ /Yes/) { print "yes"; exit }
+      if ($0 ~ /No/)  { print "no";  exit }
+    }
+  ' "$PLAN_REVIEW_FILE" || true)"
 
-# ----------------------------
-# STEP 3: AUTO-FIX BASED ON PLAN REVIEW
-# ----------------------------
-PLAN_MATCH="$(awk '
-  BEGIN { IGNORECASE=1 }
-  /Overall Match/ {
-    if ($0 ~ /Yes/) { print "yes"; exit }
-    if ($0 ~ /No/)  { print "no";  exit }
-  }
-' "$PLAN_REVIEW_FILE" || true)"
+  if [[ -z "${PLAN_MATCH:-}" ]]; then
+    echo "[ERROR] Could not parse Overall Match from: $PLAN_REVIEW_FILE"
+    exit 1
+  fi
 
-if [[ "$PLAN_MATCH" = "no" ]]; then
-  log "Plan review failed — applying fixes via Coder"
+  log "Plan review result (iter $i): $PLAN_MATCH"
 
-  copilot --agent=Coder \
-    --allow-all-tools \
-    --allow-all-paths \
-    --add-dir "$REPO_DIR" \
-    --prompt "You are the Coder agent.
+  if [[ "$PLAN_MATCH" = "yes" ]]; then
+    log "Plan review passed on iteration $i — exiting plan loop."
+    break
+  fi
+
+  if [[ "$i" -lt 3 ]]; then
+    log "Plan review is No — running Coder to apply fixes (iter $i)"
+    copilot --agent=Coder \
+      --allow-all-tools \
+      --allow-all-paths \
+      --add-dir "$REPO_DIR" \
+      --prompt "You are the Coder agent.
 
 GOAL:
-Fix ONLY the gaps mentioned in the Plan Review Report.
+Fix ONLY the gaps mentioned in the latest Plan Review Report.
 Do not add scope beyond the implementation plan.
 
 IMPLEMENTATION PLAN:
 $(cat "$LATEST_PLAN")
 
-PLAN REVIEW REPORT:
+LATEST PLAN REVIEW REPORT:
 $(cat "$PLAN_REVIEW_FILE")"
 
-  log "Auto-fix based on plan review finished"
-else
-  log "Plan review passed — no plan-level fixes required"
-fi
+    log "Coder fixes applied for iteration $i"
+  else
+    log "Reached max iterations (3). Proceeding to Code-Reviewer even though plan match is still No."
+  fi
+done
+
+log "Plan loop complete. Latest plan review report: $PLAN_REVIEW_FILE"
 
 # ----------------------------
 # STEP 4: CODE REVIEWER
@@ -193,7 +209,6 @@ fi
 # ----------------------------
 log "Step 6: Running PR-Maker agent (stage + commit + push + PR on current branch)"
 
-# Fresh snapshot so PR-Maker sees final state after all fixes
 FINAL_GIT_SNAPSHOT="$(git status --porcelain || true)"
 
 copilot --agent="PR-Maker" \
@@ -214,4 +229,4 @@ CONTEXT:
 GIT STATUS SNAPSHOT (git status --porcelain):
 $FINAL_GIT_SNAPSHOT"
 
-log "Pipeline complete: Coder → Plan-Reviewer → Auto-Fix → Code-Reviewer → Code-Fix → PR-Maker"
+log "Pipeline complete: Coder → Plan-Reviewer(loop) → Code-Reviewer → Code-Fix → PR-Maker"
